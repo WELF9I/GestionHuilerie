@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 interface Tank {
   id: number
@@ -30,6 +31,7 @@ interface Movement {
 
 export default function TanksPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [tanks, setTanks] = useState<Tank[]>([])
   const [movements, setMovements] = useState<Movement[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -68,7 +70,11 @@ export default function TanksPage() {
   const handleAddTank = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formTank.tank_code || !formTank.capacity_liters) {
-      alert("Champs obligatoires")
+      toast({
+        title: "Champs obligatoires",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive",
+      })
       return
     }
 
@@ -78,20 +84,41 @@ export default function TanksPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formTank),
       })
+      
       if (response.ok) {
+        toast({
+          title: "Succès",
+          description: "Citerne ajoutée avec succès",
+        })
         await loadData()
         setFormTank({ tank_code: "", capacity_liters: "", oil_type: "" })
         setIsOpenTank(false)
+      } else {
+        const result = await response.json()
+        toast({
+          title: "Erreur",
+          description: result.error || "Erreur lors de l'ajout",
+          variant: "destructive",
+        })
       }
     } catch (error) {
-      alert("Erreur")
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de l'ajout",
+        variant: "destructive",
+      })
     }
   }
 
   const handleAddMovement = async (e: React.FormEvent) => {
     e.preventDefault()
+    
     if (!formMove.tank_id || !formMove.quantity_liters) {
-      alert("Champs obligatoires")
+      toast({
+        title: "Champs obligatoires",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive",
+      })
       return
     }
 
@@ -101,7 +128,14 @@ export default function TanksPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formMove),
       })
+      
+      const result = await response.json()
+      
       if (response.ok) {
+        toast({
+          title: "Succès",
+          description: result.message || "Mouvement enregistré avec succès",
+        })
         await loadData()
         setFormMove({
           movement_date: new Date().toISOString().split("T")[0],
@@ -111,19 +145,47 @@ export default function TanksPage() {
           reference: "",
         })
         setIsOpenMove(false)
+      } else {
+        toast({
+          title: "Erreur",
+          description: result.error || "Erreur lors de l'enregistrement",
+          variant: "destructive",
+        })
       }
     } catch (error) {
-      alert("Erreur")
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de l'enregistrement",
+        variant: "destructive",
+      })
     }
   }
 
   const handleDeleteTank = async (id: number) => {
-    if (confirm("Êtes-vous sûr?")) {
+    if (confirm("Êtes-vous sûr de vouloir supprimer cette citerne?")) {
       try {
-        await fetch(`/api/tanks/${id}`, { method: "DELETE" })
-        setTanks(tanks.filter((t) => t.id !== id))
+        const response = await fetch(`/api/tanks/${id}`, { method: "DELETE" })
+        const result = await response.json()
+        
+        if (response.ok) {
+          toast({
+            title: "Succès",
+            description: "Citerne supprimée avec succès",
+          })
+          setTanks(tanks.filter((t) => t.id !== id))
+        } else {
+          toast({
+            title: "Impossible de supprimer",
+            description: result.error || "Erreur lors de la suppression",
+            variant: "destructive",
+          })
+        }
       } catch (error) {
-        alert("Erreur")
+        toast({
+          title: "Erreur",
+          description: "Erreur lors de la suppression",
+          variant: "destructive",
+        })
       }
     }
   }
@@ -244,7 +306,6 @@ export default function TanksPage() {
                       >
                         <option value="entrée">Entrée</option>
                         <option value="sortie">Sortie</option>
-                        <option value="transfert">Transfert</option>
                       </select>
                     </div>
                     <div className="space-y-2">

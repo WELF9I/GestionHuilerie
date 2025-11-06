@@ -96,12 +96,14 @@ export function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       movement_date DATE NOT NULL,
       movement_type TEXT NOT NULL,
-      tank_id INTEGER NOT NULL,
+      tank_id INTEGER,
+      target_tank_id INTEGER,
       quantity_liters REAL NOT NULL,
       reference TEXT,
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (tank_id) REFERENCES tanks(id)
+      FOREIGN KEY (tank_id) REFERENCES tanks(id),
+      FOREIGN KEY (target_tank_id) REFERENCES tanks(id)
     )
   `)
 
