@@ -11,13 +11,23 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const movements = db.prepare("SELECT COUNT(*) as count FROM tank_movements WHERE tank_id = ?").get(id) as { count: number }
     
     if (movements.count > 0) {
+      // Instead of preventing deletion, implement soft deletion
+      // Mark the tank as inactive instead of deleting it
+      db.prepare("UPDATE tanks SET is_active = 0 WHERE id = ?").run(id)
       return NextResponse.json({ 
-        error: "Impossible de supprimer cette citerne car elle a des mouvements associés. Supprimez d'abord les mouvements." 
-      }, { status: 400 })
+        success: true,
+        message: "Citerne désactivée (soft delete). Les mouvements historiques sont conservés.",
+        type: "soft_delete"
+      })
+    } else {
+      // No movements - safe to hard delete
+      db.prepare("DELETE FROM tanks WHERE id = ?").run(id)
+      return NextResponse.json({ 
+        success: true,
+        message: "Citerne supprimée définitivement.",
+        type: "hard_delete"
+      })
     }
-    
-    db.prepare("DELETE FROM tanks WHERE id = ?").run(id)
-    return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Erreur lors de la suppression:", error)
     return NextResponse.json({ error: "Erreur lors de la suppression de la citerne" }, { status: 500 })

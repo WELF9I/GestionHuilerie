@@ -85,6 +85,7 @@ export function initializeDatabase() {
       capacity_liters REAL NOT NULL,
       current_volume REAL DEFAULT 0,
       oil_type TEXT,
+      is_active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )

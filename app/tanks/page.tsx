@@ -162,17 +162,26 @@ export default function TanksPage() {
   }
 
   const handleDeleteTank = async (id: number) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer cette citerne?")) {
+    if (confirm("Êtes-vous sûr de vouloir supprimer cette citerne?\n\nSi la citerne a des mouvements historiques, elle sera désactivée plutôt que supprimée pour préserver l'historique.")) {
       try {
         const response = await fetch(`/api/tanks/${id}`, { method: "DELETE" })
         const result = await response.json()
         
         if (response.ok) {
-          toast({
-            title: "Succès",
-            description: "Citerne supprimée avec succès",
-          })
-          setTanks(tanks.filter((t) => t.id !== id))
+          if (result.type === "soft_delete") {
+            toast({
+              title: "Citerne désactivée",
+              description: result.message,
+            })
+            // Remove from the list since it's now inactive
+            setTanks(tanks.filter((t) => t.id !== id))
+          } else {
+            toast({
+              title: "Succès",
+              description: result.message,
+            })
+            setTanks(tanks.filter((t) => t.id !== id))
+          }
         } else {
           toast({
             title: "Impossible de supprimer",
