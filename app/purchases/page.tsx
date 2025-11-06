@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Edit2 } from "lucide-react"
 
 interface Supplier {
   id: number
@@ -36,6 +36,7 @@ export default function PurchasesPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     purchase_date: new Date().toISOString().split("T")[0],
     supplier_id: "",
@@ -65,7 +66,7 @@ export default function PurchasesPage() {
     }
   }
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.supplier_id || !formData.quantity_kg || !formData.unit_price) {
       alert("Veuillez remplir tous les champs obligatoires")
@@ -73,25 +74,54 @@ export default function PurchasesPage() {
     }
 
     try {
-      const response = await fetch("/api/purchases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      })
-      if (response.ok) {
-        await loadData()
-        setFormData({
-          purchase_date: new Date().toISOString().split("T")[0],
-          supplier_id: "",
-          quantity_kg: "",
-          unit_price: "",
-          advance_paid: "",
+      if (editingId) {
+        const response = await fetch(`/api/purchases/${editingId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
         })
-        setIsOpen(false)
+        if (response.ok) {
+          await loadData()
+          resetForm()
+        }
+      } else {
+        const response = await fetch("/api/purchases", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        })
+        if (response.ok) {
+          await loadData()
+          resetForm()
+        }
       }
     } catch (error) {
       alert("Erreur lors de l'enregistrement")
     }
+  }
+
+  const resetForm = () => {
+    setFormData({
+      purchase_date: new Date().toISOString().split("T")[0],
+      supplier_id: "",
+      quantity_kg: "",
+      unit_price: "",
+      advance_paid: "",
+    })
+    setEditingId(null)
+    setIsOpen(false)
+  }
+
+  const handleEdit = (purchase: Purchase) => {
+    setFormData({
+      purchase_date: purchase.purchase_date,
+      supplier_id: purchase.supplier_id.toString(),
+      quantity_kg: purchase.quantity_kg.toString(),
+      unit_price: purchase.unit_price.toString(),
+      advance_paid: purchase.advance_paid.toString(),
+    })
+    setEditingId(purchase.id)
+    setIsOpen(true)
   }
 
   const handleDelete = async (id: number) => {
@@ -141,9 +171,9 @@ export default function PurchasesPage() {
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Enregistrer un Achat</DialogTitle>
+                  <DialogTitle>{editingId ? "Modifier l'Achat" : "Enregistrer un Achat"}</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleAdd} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Date *</label>
                     <Input
@@ -198,7 +228,7 @@ export default function PurchasesPage() {
                     />
                   </div>
                   <Button type="submit" className="w-full">
-                    Enregistrer
+                    {editingId ? "Mettre à Jour" : "Enregistrer"}
                   </Button>
                 </form>
               </DialogContent>
@@ -267,14 +297,23 @@ export default function PurchasesPage() {
                           <TableCell>{p.remaining_balance.toFixed(2)}</TableCell>
                           <TableCell className="text-xs">{p.batch_number}</TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(p.id)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(p)}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(p.id)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
