@@ -85,7 +85,7 @@ export default function HomePage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-gradient-to-br from-background via-card to-background px-4">
+      <div className="flex h-screen flex-col items-center justify-center bg-linear-to-br from-background via-card to-background px-4">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <div className="mb-4 flex justify-center">
@@ -301,20 +301,6 @@ export default function HomePage() {
                 </Card>
               </Link>
 
-              <Link href="/services">
-                <Card className="h-full cursor-pointer transition-all hover:border-primary hover:shadow-xl hover:shadow-primary/10">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">Apports Clients</CardTitle>
-                        <CardDescription>Pressage privé</CardDescription>
-                      </div>
-                      <Users className="h-8 w-8 text-primary" />
-                    </div>
-                  </CardHeader>
-                </Card>
-              </Link>
-
               <Link href="/pomace">
                 <Card className="h-full cursor-pointer transition-all hover:border-primary hover:shadow-xl hover:shadow-primary/10">
                   <CardHeader>
@@ -324,20 +310,6 @@ export default function HomePage() {
                         <CardDescription>Gestion des résidus</CardDescription>
                       </div>
                       <Droplets className="h-8 w-8 text-primary" />
-                    </div>
-                  </CardHeader>
-                </Card>
-              </Link>
-
-              <Link href="/reports">
-                <Card className="h-full cursor-pointer transition-all hover:border-primary hover:shadow-xl hover:shadow-primary/10">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">Rapports</CardTitle>
-                        <CardDescription>Export des données</CardDescription>
-                      </div>
-                      <AlertCircle className="h-8 w-8 text-primary" />
                     </div>
                   </CardHeader>
                 </Card>

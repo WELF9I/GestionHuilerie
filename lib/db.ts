@@ -125,22 +125,6 @@ export function initializeDatabase() {
     )
   `)
 
-  // Customer Services (Pressage privé) table
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS customer_services (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      service_date DATE NOT NULL,
-      customer_name TEXT NOT NULL,
-      olives_brought_kg REAL NOT NULL,
-      oil_produced_liters REAL NOT NULL,
-      service_fee REAL DEFAULT 0,
-      oil_given_to_customer INTEGER DEFAULT 1,
-      notes TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `)
-
   // Pomace (Grignons) table
   database.exec(`
     CREATE TABLE IF NOT EXISTS pomace (

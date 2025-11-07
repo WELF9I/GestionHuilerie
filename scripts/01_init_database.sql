@@ -126,34 +126,7 @@ CREATE TABLE IF NOT EXISTS sales (
   FOREIGN KEY(customerId) REFERENCES customers(id)
 );
 
--- 7. SERVICES MODULE (Pressing Services)
-CREATE TABLE IF NOT EXISTS service_customers (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  phone TEXT,
-  email TEXT,
-  address TEXT,
-  status TEXT CHECK(status IN ('actif', 'inactif')) DEFAULT 'actif',
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS pressing_services (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  customerId INTEGER NOT NULL,
-  serviceDate DATE NOT NULL,
-  oliveQuantityKg REAL NOT NULL,
-  pricePerKg REAL NOT NULL,
-  totalPrice REAL NOT NULL,
-  oilProducedLiters REAL,
-  paymentStatus TEXT CHECK(paymentStatus IN ('en_attente', 'partiel', 'paye')) DEFAULT 'en_attente',
-  notes TEXT,
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(customerId) REFERENCES service_customers(id)
-);
-
--- 8. POMACE/GRIGNONS MODULE
+-- 7. AUDIT LOG MODULE
 CREATE TABLE IF NOT EXISTS pomace_stock (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   pressingSessionId INTEGER,
@@ -184,7 +157,7 @@ CREATE TABLE IF NOT EXISTS pomace_sales (
   FOREIGN KEY(buyerId) REFERENCES suppliers(id)
 );
 
--- 9. AUDIT LOG MODULE
+-- 8. SYSTEM SETTINGS
 CREATE TABLE IF NOT EXISTS audit_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   action TEXT NOT NULL,
@@ -211,5 +184,4 @@ CREATE INDEX IF NOT EXISTS idx_pressing_date ON pressing_sessions(pressDate);
 CREATE INDEX IF NOT EXISTS idx_tank_status ON storage_tanks(status);
 CREATE INDEX IF NOT EXISTS idx_sale_date ON sales(saleDate);
 CREATE INDEX IF NOT EXISTS idx_customer_status ON customers(status);
-CREATE INDEX IF NOT EXISTS idx_service_date ON pressing_services(serviceDate);
 CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);

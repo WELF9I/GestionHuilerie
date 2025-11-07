@@ -10,9 +10,9 @@ export default function DashboardPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token")
-    if (!token) {
-      router.push("/login")
+    const isAuth = localStorage.getItem("huilerie_auth") === "true"
+    if (!isAuth) {
+      router.push("/")
     } else {
       setIsAuthenticated(true)
     }
