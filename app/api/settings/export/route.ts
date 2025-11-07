@@ -1,19 +1,27 @@
 import { NextResponse } from "next/server"
 import path from "path"
 import fs from "fs"
-import { initializeDatabase } from "@/lib/db"
+import { initializeDatabase, closeDatabase, getDatabase } from "@/lib/db"
 
 export async function GET() {
   try {
     initializeDatabase()
+    
+    // Ensure all pending writes are flushed to disk
+    const db = getDatabase()
+    db.pragma("wal_checkpoint(TRUNCATE)")
+    
     const dbPath = path.join(process.cwd(), "data", "huilerie.db")
     
     if (!fs.existsSync(dbPath)) {
       return NextResponse.json({ error: "Base de données introuvable" }, { status: 404 })
     }
 
-    // Read the database file
-    const dbBuffer = fs.readFileSync(dbPath)
+  // Read the database file
+  const dbBuffer = fs.readFileSync(dbPath)
+
+  // Close the database connection after exporting to release file handles
+  closeDatabase()
     
     // Create a filename with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5)

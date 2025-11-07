@@ -250,7 +250,7 @@ export default function HomePage() {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-lg">Achats d'Olives</CardTitle>
+                        <CardTitle className="text-lg">Achats d'Huile</CardTitle>
                         <CardDescription>Enregistrement des achats</CardDescription>
                       </div>
                       <Droplets className="h-8 w-8 text-primary" />

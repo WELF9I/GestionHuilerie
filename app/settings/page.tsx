@@ -262,10 +262,10 @@ export default function SettingsPage() {
               <AlertTriangle className="h-5 w-5" />
               Confirmation de suppression
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p>
+            <div className="space-y-3 text-sm text-muted-foreground">
+              <div>
                 <strong>ATTENTION :</strong> Cette action supprimera <strong>TOUTES</strong> les données de l'application :
-              </p>
+              </div>
               <ul className="list-disc list-inside space-y-1 text-sm">
                 <li>Employés</li>
                 <li>Fournisseurs et achats d'olives</li>
@@ -274,7 +274,7 @@ export default function SettingsPage() {
                 <li>Ventes d'huile</li>
                 <li>Grignons</li>
               </ul>
-              <p className="font-semibold">Cette action est IRRÉVERSIBLE.</p>
+              <div className="font-semibold">Cette action est IRRÉVERSIBLE.</div>
               <div className="pt-2">
                 <Label htmlFor="confirmation">
                   Pour confirmer, tapez <code className="bg-muted px-2 py-1 rounded">DELETE_ALL_DATA</code>
@@ -287,7 +287,7 @@ export default function SettingsPage() {
                   className="mt-2"
                 />
               </div>
-            </AlertDialogDescription>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setClearConfirmation("")}>Annuler</AlertDialogCancel>

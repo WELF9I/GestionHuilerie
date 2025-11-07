@@ -16,16 +16,24 @@ export async function POST(request: NextRequest) {
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
       .all() as { name: string }[]
 
-    // Delete all data from each table (but keep the structure)
-    for (const table of tables) {
-      // Don't delete from users table to keep the admin account
-      if (table.name !== "users" && table.name !== "settings") {
-        db.prepare(`DELETE FROM ${table.name}`).run()
-      }
-    }
+    // Temporarily disable foreign key constraints
+    db.prepare("PRAGMA foreign_keys = OFF").run()
 
-    // Reset auto-increment counters
-    db.prepare("DELETE FROM sqlite_sequence WHERE name != 'users'").run()
+    try {
+      // Delete all data from each table (but keep the structure)
+      for (const table of tables) {
+        // Don't delete from users table to keep the admin account
+        if (table.name !== "users" && table.name !== "settings") {
+          db.prepare(`DELETE FROM ${table.name}`).run()
+        }
+      }
+
+      // Reset auto-increment counters
+      db.prepare("DELETE FROM sqlite_sequence WHERE name != 'users'").run()
+    } finally {
+      // Re-enable foreign key constraints
+      db.prepare("PRAGMA foreign_keys = ON").run()
+    }
 
     return NextResponse.json({ 
       success: true, 

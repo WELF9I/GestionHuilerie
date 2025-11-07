@@ -16,8 +16,9 @@ export default function Navigation({ onLogout }: NavigationProps) {
   const navLinks = [
     { href: "/", label: "Tableau de Bord", icon: "📊" },
     { href: "/employees", label: "Employés", icon: "👥" },
+    { href: "/payroll", label: "Paie", icon: "💵" },
     { href: "/suppliers", label: "Fournisseurs", icon: "🚚" },
-    { href: "/purchases", label: "Achats d'Olives", icon: "🫒" },
+    { href: "/purchases", label: "Achats d'Huile", icon: "🫒" },
     { href: "/pressing", label: "Pressage", icon: "⚙️" },
     { href: "/tanks", label: "Citernes", icon: "🏭" },
     { href: "/sales", label: "Ventes", icon: "💰" },

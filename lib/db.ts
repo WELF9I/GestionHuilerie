@@ -12,6 +12,19 @@ export function getDatabase() {
   return db
 }
 
+export function closeDatabase() {
+  if (db) {
+    // Ensure pending transactions are flushed and WAL is truncated before closing
+    try {
+      db.pragma("wal_checkpoint(TRUNCATE)")
+    } catch (error) {
+      console.error("Erreur lors du checkpoint WAL:", error)
+    }
+    db.close()
+    db = null
+  }
+}
+
 export function initializeDatabase() {
   const database = getDatabase()
 
@@ -148,6 +161,21 @@ export function initializeDatabase() {
       setting_value TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  // Payroll table for tracking employee payments and advances
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS payroll (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      employee_id INTEGER NOT NULL,
+      payment_date DATE NOT NULL,
+      payment_type TEXT NOT NULL CHECK(payment_type IN ('salary', 'advance')),
+      amount REAL NOT NULL,
+      month TEXT,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE CASCADE
     )
   `)
 }

@@ -180,21 +180,12 @@ export default function PressingPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Huile Produite (L) *</label>
+                    <label className="text-sm font-medium">Huile Produite (kg) *</label>
                     <Input
                       type="number"
                       step="0.01"
                       value={formData.oil_produced_liters}
                       onChange={(e) => setFormData({ ...formData, oil_produced_liters: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Grignons (kg)</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.pomace_quantity_kg}
-                      onChange={(e) => setFormData({ ...formData, pomace_quantity_kg: e.target.value })}
                     />
                   </div>
                   <Button type="submit" className="w-full">
@@ -247,9 +238,8 @@ export default function PressingPage() {
                         <TableHead>Date</TableHead>
                         <TableHead>Lot</TableHead>
                         <TableHead>Olives (kg)</TableHead>
-                        <TableHead>Huile (L)</TableHead>
+                        <TableHead>Huile (kg)</TableHead>
                         <TableHead>Rendement %</TableHead>
-                        <TableHead>Grignons (kg)</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -261,7 +251,6 @@ export default function PressingPage() {
                           <TableCell>{o.olives_quantity_kg}</TableCell>
                           <TableCell>{o.oil_produced_liters}</TableCell>
                           <TableCell className="font-bold">{o.rendement_percentage}%</TableCell>
-                          <TableCell>{o.pomace_quantity_kg}</TableCell>
                           <TableCell>
                             <Button
                               variant="ghost"

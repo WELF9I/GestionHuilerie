@@ -1,12 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import path from "path"
 import fs from "fs"
-import { initializeDatabase } from "@/lib/db"
+import { initializeDatabase, closeDatabase } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
-    initializeDatabase()
-    const formData = await request.formData()
+  const formData = await request.formData()
     const file = formData.get("file") as File
     
     if (!file) {
@@ -18,12 +17,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Le fichier doit être un fichier .db" }, { status: 400 })
     }
 
-    const dbPath = path.join(process.cwd(), "data", "huilerie.db")
-    const backupPath = path.join(process.cwd(), "data", `huilerie-backup-${Date.now()}.db`)
+    const dataDir = path.join(process.cwd(), "data")
+    const dbPath = path.join(dataDir, "huilerie.db")
+    const backupPath = path.join(dataDir, `huilerie-backup-${Date.now()}.db`)
+    const walPath = `${dbPath}-wal`
+    const shmPath = `${dbPath}-shm`
+
+    // Close the current database connection before replacing the file
+    closeDatabase()
+
+    // Ensure data directory exists
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true })
+    }
 
     // Create backup of current database before replacing
     if (fs.existsSync(dbPath)) {
       fs.copyFileSync(dbPath, backupPath)
+    }
+
+    // Remove lingering WAL/SHM files so they don't override imported data
+    if (fs.existsSync(walPath)) {
+      fs.rmSync(walPath)
+    }
+    if (fs.existsSync(shmPath)) {
+      fs.rmSync(shmPath)
     }
 
     // Read the uploaded file
@@ -32,6 +50,9 @@ export async function POST(request: NextRequest) {
 
     // Write the new database file
     fs.writeFileSync(dbPath, buffer)
+
+    // Reinitialize the database with the new file
+    initializeDatabase()
 
     return NextResponse.json({ 
       success: true, 
