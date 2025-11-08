@@ -21,28 +21,30 @@ export async function POST(request: NextRequest) {
     const quantity = Number(quantity_liters)
     const total_amount = quantity * Number(unit_price)
 
-    // Check tank stock
-    const tank = db.prepare("SELECT tank_code, current_volume FROM tanks WHERE id = ?").get(tank_id) as { tank_code: string, current_volume: number }
-    if (!tank) {
-      return NextResponse.json({ error: "Citerne non trouvée" }, { status: 404 })
-    }
+    // Check tank stock only if tank_id is provided
+    if (tank_id) {
+      const tank = db.prepare("SELECT tank_code, current_volume FROM tanks WHERE id = ?").get(tank_id) as { tank_code: string, current_volume: number }
+      if (!tank) {
+        return NextResponse.json({ error: "Citerne non trouvée" }, { status: 404 })
+      }
 
-    if (quantity > tank.current_volume) {
-      return NextResponse.json({ 
-        error: `Stock insuffisant! La citerne ${tank.tank_code} contient seulement ${tank.current_volume}L. Quantité demandée: ${quantity}L.` 
-      }, { status: 400 })
-    }
+      if (quantity > tank.current_volume) {
+        return NextResponse.json({ 
+          error: `Stock insuffisant! La citerne ${tank.tank_code} contient seulement ${tank.current_volume}L. Quantité demandée: ${quantity}L.` 
+        }, { status: 400 })
+      }
 
-    // Deduct from tank
-    const newVolume = tank.current_volume - quantity
-    db.prepare("UPDATE tanks SET current_volume = ? WHERE id = ?").run(newVolume, tank_id)
+      // Deduct from tank
+      const newVolume = tank.current_volume - quantity
+      db.prepare("UPDATE tanks SET current_volume = ? WHERE id = ?").run(newVolume, tank_id)
+    }
 
     const result = db
       .prepare(`
       INSERT INTO oil_sales (sale_date, customer_name, quantity_liters, unit_price, total_amount, tank_id, notes)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `)
-      .run(sale_date, customer_name, quantity_liters, unit_price, total_amount, tank_id, notes || "")
+      .run(sale_date, customer_name, quantity_liters, unit_price, total_amount, tank_id || null, notes || "")
 
     return NextResponse.json({ id: result.lastInsertRowid, total_amount })
   } catch (error) {

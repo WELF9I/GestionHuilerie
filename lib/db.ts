@@ -132,7 +132,7 @@ export function initializeDatabase() {
       quantity_liters REAL NOT NULL,
       unit_price REAL NOT NULL,
       total_amount REAL NOT NULL,
-      tank_id INTEGER NOT NULL,
+      tank_id INTEGER,
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

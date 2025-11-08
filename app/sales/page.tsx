@@ -65,7 +65,7 @@ export default function SalesPage() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.customer_name || !formData.quantity_liters || !formData.unit_price || !formData.tank_id) {
+    if (!formData.customer_name || !formData.quantity_liters || !formData.unit_price) {
       alert("Veuillez remplir les champs obligatoires")
       return
     }
@@ -181,13 +181,13 @@ export default function SalesPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Citerne *</label>
+                    <label className="text-sm font-medium">Citerne</label>
                     <Select
                       value={formData.tank_id}
                       onValueChange={(value) => setFormData({ ...formData, tank_id: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner..." />
+                        <SelectValue placeholder="Sélectionner une citerne" />
                       </SelectTrigger>
                       <SelectContent>
                         {tanks.map((t) => (
