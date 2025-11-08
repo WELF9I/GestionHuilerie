@@ -204,7 +204,7 @@ export default function HomePage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <ShoppingCart className="h-4 w-4" />
-                  Ventes du Mois
+                  Ventes du Mois (Huile)
                 </CardTitle>
               </CardHeader>
               <CardContent>

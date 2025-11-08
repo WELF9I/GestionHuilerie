@@ -15,17 +15,23 @@ export async function GET() {
     // Get total oil stock from tanks
     const oilStock = db.prepare("SELECT SUM(current_volume) as total FROM tanks").get() as { total: number | null }
 
-    // Get monthly sales (current month)
+    // Get monthly sales (current month) - Only oil sales from oil_sales table
     const today = new Date()
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0]
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split("T")[0]
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+
+    // Format dates as YYYY-MM-DD for SQLite
+    const firstDayStr = firstDay.toISOString().split('T')[0]
+    const lastDayStr = lastDay.toISOString().split('T')[0]
 
     const sales = db
       .prepare(`
-      SELECT SUM(total_amount) as total FROM oil_sales 
-      WHERE sale_date BETWEEN ? AND ?
+      SELECT COALESCE(SUM(total_amount), 0) as total
+      FROM oil_sales
+      WHERE sale_date >= ? AND sale_date <= ?
+      AND total_amount > 0
     `)
-      .get(firstDay, lastDay) as { total: number | null }
+      .get(firstDayStr, lastDayStr) as { total: number | null }
 
     return NextResponse.json({
       totalEmployees: employees.count || 0,
