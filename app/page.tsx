@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Droplets, Eye, EyeOff, Users, Truck, Droplet, ShoppingCart, AlertCircle } from "lucide-react"
+import { Droplets, Eye, EyeOff, Users, Truck, Droplet, ShoppingCart, AlertCircle, Download } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Navigation from "@/components/navigation"
 
@@ -70,6 +70,28 @@ export default function HomePage() {
     localStorage.removeItem("huilerie_auth")
     setIsAuthenticated(false)
     setPassword("")
+  }
+
+  const handleExportDatabase = async () => {
+    try {
+      const response = await fetch("/api/settings/export")
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `huilerie-backup-${new Date().toISOString().split("T")[0]}.db`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        alert("Erreur lors de l'export de la base de données")
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'export:", error)
+      alert("Erreur lors de l'export de la base de données")
+    }
   }
 
   if (isLoading) {
@@ -155,9 +177,19 @@ export default function HomePage() {
 
       <main className="flex-1 overflow-auto">
         <div className="p-6 md:p-8">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-foreground">Tableau de Bord</h1>
-            <p className="mt-2 text-lg text-muted-foreground">Bienvenue dans l'application de gestion d'huilerie</p>
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-foreground">Tableau de Bord</h1>
+              <p className="mt-2 text-lg text-muted-foreground">Bienvenue dans l'application de gestion d'huilerie</p>
+            </div>
+            <Button
+              onClick={handleExportDatabase}
+              className="flex items-center gap-2"
+              variant="outline"
+            >
+              <Download className="h-4 w-4" />
+              Exporter la Base de Données
+            </Button>
           </div>
 
           <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
