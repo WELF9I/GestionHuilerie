@@ -27,6 +27,9 @@ export function closeDatabase() {
 
 export function initializeDatabase() {
   const database = getDatabase()
+  
+  // Enable foreign keys
+  database.pragma("foreign_keys = ON")
 
   // Employees table
   database.exec(`
@@ -79,14 +82,13 @@ export function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS pressing_operations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       operation_date DATE NOT NULL,
-      purchase_id INTEGER NOT NULL,
       olives_quantity_kg REAL NOT NULL,
       oil_produced_liters REAL NOT NULL,
-      pomace_quantity_kg REAL NOT NULL,
+      pomace_quantity_kg REAL,
       rendement_percentage REAL,
+      notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (purchase_id) REFERENCES olive_purchases(id)
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `)
 

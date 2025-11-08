@@ -23,16 +23,25 @@ export async function POST(request: NextRequest) {
     const db = getDatabase()
     const { purchase_date, supplier_id, quantity_kg, unit_price, advance_paid, tank_allocations } = await request.json()
 
+    // Validate required fields
+    if (!purchase_date || !supplier_id || !quantity_kg || !unit_price) {
+      return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 })
+    }
+
+    // Check if supplier exists
+    const supplier = db.prepare('SELECT name FROM suppliers WHERE id = ?').get(supplier_id) as { name: string } | undefined
+    if (!supplier) {
+      return NextResponse.json({ error: "Fournisseur introuvable" }, { status: 400 })
+    }
+
     const total_amount = Number(quantity_kg) * Number(unit_price)
     const remaining_balance = total_amount - Number(advance_paid)
     
-    // Get supplier name for batch number
-    const supplier = db.prepare('SELECT name FROM suppliers WHERE id = ?').get(supplier_id) as { name: string } | undefined
-    const supplierName = supplier?.name || 'Unknown'
+    const supplierName = supplier.name
     
     // Get count of purchases for this supplier to generate sequential number
     const count = db.prepare('SELECT COUNT(*) as count FROM olive_purchases WHERE supplier_id = ?').get(supplier_id) as { count: number }
-    const sequentialNumber = String(count.count + 1).padStart(3, '0')
+    const sequentialNumber = String(count.count + 1).padStart(6, '0')
     
     const batch_number = `LOT-${supplierName}-${sequentialNumber}`
 

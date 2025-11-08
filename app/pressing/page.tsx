@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Edit } from "lucide-react"
 
 interface Purchase {
   id: number
@@ -20,25 +20,25 @@ interface Purchase {
 interface Operation {
   id: number
   operation_date: string
-  lot: string
   olives_quantity_kg: number
   oil_produced_liters: number
   pomace_quantity_kg: number
   rendement_percentage: number
+  notes: string
 }
 
 export default function PressingPage() {
   const router = useRouter()
   const [operations, setOperations] = useState<Operation[]>([])
-  const [purchases, setPurchases] = useState<Purchase[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
+  const [editingOperation, setEditingOperation] = useState<Operation | null>(null)
   const [formData, setFormData] = useState({
     operation_date: new Date().toISOString().split("T")[0],
-    purchase_id: "",
     olives_quantity_kg: "",
     oil_produced_liters: "",
     pomace_quantity_kg: "",
+    notes: "",
   })
 
   useEffect(() => {
@@ -52,9 +52,11 @@ export default function PressingPage() {
 
   const loadData = async () => {
     try {
-      const [opRes, purchRes] = await Promise.all([fetch("/api/pressing"), fetch("/api/purchases")])
-      if (opRes.ok) setOperations(await opRes.json())
-      if (purchRes.ok) setPurchases(await purchRes.json())
+      const response = await fetch("/api/pressing")
+      if (response.ok) {
+        const data = await response.json()
+        setOperations(data || [])
+      }
     } catch (error) {
       console.error("Erreur:", error)
     } finally {
@@ -64,7 +66,7 @@ export default function PressingPage() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.purchase_id || !formData.olives_quantity_kg || !formData.oil_produced_liters) {
+    if (!formData.olives_quantity_kg || !formData.oil_produced_liters) {
       alert("Veuillez remplir les champs obligatoires")
       return
     }
@@ -77,18 +79,57 @@ export default function PressingPage() {
       })
       if (response.ok) {
         await loadData()
-        setFormData({
-          operation_date: new Date().toISOString().split("T")[0],
-          purchase_id: "",
-          olives_quantity_kg: "",
-          oil_produced_liters: "",
-          pomace_quantity_kg: "",
-        })
-        setIsOpen(false)
+        resetForm()
       }
     } catch (error) {
       alert("Erreur lors de l'enregistrement")
     }
+  }
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.olives_quantity_kg || !formData.oil_produced_liters || !editingOperation) {
+      alert("Veuillez remplir les champs obligatoires")
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/pressing/${editingOperation.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+      if (response.ok) {
+        await loadData()
+        resetForm()
+      }
+    } catch (error) {
+      alert("Erreur lors de la modification")
+    }
+  }
+
+  const handleEditClick = (operation: Operation) => {
+    setEditingOperation(operation)
+    setFormData({
+      operation_date: operation.operation_date,
+      olives_quantity_kg: operation.olives_quantity_kg.toString(),
+      oil_produced_liters: operation.oil_produced_liters.toString(),
+      pomace_quantity_kg: operation.pomace_quantity_kg?.toString() || "",
+      notes: operation.notes || "",
+    })
+    setIsOpen(true)
+  }
+
+  const resetForm = () => {
+    setFormData({
+      operation_date: new Date().toISOString().split("T")[0],
+      olives_quantity_kg: "",
+      oil_produced_liters: "",
+      pomace_quantity_kg: "",
+      notes: "",
+    })
+    setEditingOperation(null)
+    setIsOpen(false)
   }
 
   const handleDelete = async (id: number) => {
@@ -132,7 +173,10 @@ export default function PressingPage() {
               <h1 className="text-3xl font-bold text-foreground">Pressage / Transformation</h1>
               <p className="mt-2 text-muted-foreground">Transformation d'olives en huile</p>
             </div>
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <Dialog open={isOpen} onOpenChange={(open) => {
+              if (!open) resetForm()
+              setIsOpen(open)
+            }}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
@@ -141,9 +185,9 @@ export default function PressingPage() {
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Enregistrer Pressage</DialogTitle>
+                  <DialogTitle>{editingOperation ? "Modifier Pressage" : "Enregistrer Pressage"}</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleAdd} className="space-y-4">
+                <form onSubmit={editingOperation ? handleEdit : handleAdd} className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Date *</label>
                     <Input
@@ -151,24 +195,6 @@ export default function PressingPage() {
                       value={formData.operation_date}
                       onChange={(e) => setFormData({ ...formData, operation_date: e.target.value })}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Lot d'Olives *</label>
-                    <Select
-                      value={formData.purchase_id}
-                      onValueChange={(value) => setFormData({ ...formData, purchase_id: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {purchases.map((p) => (
-                          <SelectItem key={p.id} value={p.id.toString()}>
-                            {p.batch_number}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Quantité Olives (kg) *</label>
@@ -188,8 +214,26 @@ export default function PressingPage() {
                       onChange={(e) => setFormData({ ...formData, oil_produced_liters: e.target.value })}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Grignons Produits (kg)</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.pomace_quantity_kg}
+                      onChange={(e) => setFormData({ ...formData, pomace_quantity_kg: e.target.value })}
+                      placeholder="Optionnel"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Notes</label>
+                    <Input
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Notes optionnelles"
+                    />
+                  </div>
                   <Button type="submit" className="w-full">
-                    Enregistrer
+                    {editingOperation ? "Modifier" : "Enregistrer"}
                   </Button>
                 </form>
               </DialogContent>
@@ -236,10 +280,11 @@ export default function PressingPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
-                        <TableHead>Lot</TableHead>
                         <TableHead>Olives (kg)</TableHead>
                         <TableHead>Huile (kg)</TableHead>
+                        <TableHead>Grignons (kg)</TableHead>
                         <TableHead>Rendement %</TableHead>
+                        <TableHead>Notes</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -247,19 +292,29 @@ export default function PressingPage() {
                       {operations.map((o) => (
                         <TableRow key={o.id}>
                           <TableCell>{o.operation_date}</TableCell>
-                          <TableCell className="text-sm">{o.lot}</TableCell>
                           <TableCell>{o.olives_quantity_kg}</TableCell>
                           <TableCell>{o.oil_produced_liters}</TableCell>
+                          <TableCell>{o.pomace_quantity_kg || '-'}</TableCell>
                           <TableCell className="font-bold">{o.rendement_percentage}%</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{o.notes || '-'}</TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(o.id)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditClick(o)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(o.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

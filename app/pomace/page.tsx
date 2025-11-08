@@ -17,15 +17,16 @@ import {
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Trash2, Edit, Leaf } from "lucide-react"
+import { Plus, Trash2, Edit, Leaf, TrendingUp } from "lucide-react"
 
 interface Pomace {
   id: number
-  date: string
+  collection_date: string
   quantity_kg: number
-  destination: string
-  sold: boolean
-  notes: string
+  status: string
+  customer_buyer: string | null
+  sale_price: number | null
+  notes: string | null
 }
 
 export default function PomacePage() {
@@ -35,10 +36,11 @@ export default function PomacePage() {
   const [isOpen, setIsOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
-    date: "",
+    collection_date: "",
     quantity_kg: "",
-    destination: "",
-    sold: false,
+    status: "stocké",
+    customer_buyer: "",
+    sale_price: "",
     notes: "",
   })
 
@@ -48,71 +50,89 @@ export default function PomacePage() {
       router.push("/")
       return
     }
-    setPomaceList([])
-    setIsLoading(false)
+    loadData()
   }, [router])
 
-  const handleAddPomace = (e: React.FormEvent) => {
+  const loadData = async () => {
+    try {
+      const response = await fetch("/api/pomace")
+      if (response.ok) {
+        const result = await response.json()
+        setPomaceList(result.data || [])
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAddPomace = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.date || !formData.quantity_kg) {
+    if (!formData.collection_date || !formData.quantity_kg) {
       alert("Veuillez remplir les champs obligatoires")
       return
     }
 
-    if (editingId) {
-      setPomaceList(
-        pomaceList.map((pomace) =>
-          pomace.id === editingId
-            ? {
-                ...pomace,
-                date: formData.date,
-                quantity_kg: Number.parseFloat(formData.quantity_kg),
-                destination: formData.destination,
-                sold: formData.sold,
-                notes: formData.notes,
-              }
-            : pomace,
-        ),
-      )
-      setEditingId(null)
-    } else {
-      const newPomace: Pomace = {
-        id: Date.now(),
-        date: formData.date,
-        quantity_kg: Number.parseFloat(formData.quantity_kg),
-        destination: formData.destination,
-        sold: formData.sold,
-        notes: formData.notes,
-      }
-      setPomaceList([...pomaceList, newPomace])
-    }
+    try {
+      const url = editingId ? `/api/pomace` : "/api/pomace"
+      const method = editingId ? "PUT" : "POST"
+      const body = editingId
+        ? { ...formData, id: editingId, quantity_kg: Number.parseFloat(formData.quantity_kg), sale_price: formData.sale_price ? Number.parseFloat(formData.sale_price) : null }
+        : { ...formData, quantity_kg: Number.parseFloat(formData.quantity_kg), sale_price: formData.sale_price ? Number.parseFloat(formData.sale_price) : null }
 
-    setFormData({
-      date: "",
-      quantity_kg: "",
-      destination: "",
-      sold: false,
-      notes: "",
-    })
-    setIsOpen(false)
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+
+      if (response.ok) {
+        await loadData()
+        setFormData({
+          collection_date: "",
+          quantity_kg: "",
+          status: "stocké",
+          customer_buyer: "",
+          sale_price: "",
+          notes: "",
+        })
+        setIsOpen(false)
+        setEditingId(null)
+      } else {
+        alert("Erreur lors de l'enregistrement")
+      }
+    } catch (error) {
+      alert("Erreur lors de l'enregistrement")
+    }
   }
 
   const handleEdit = (pomace: Pomace) => {
     setFormData({
-      date: pomace.date,
+      collection_date: pomace.collection_date,
       quantity_kg: pomace.quantity_kg.toString(),
-      destination: pomace.destination,
-      sold: pomace.sold,
-      notes: pomace.notes,
+      status: pomace.status,
+      customer_buyer: pomace.customer_buyer || "",
+      sale_price: pomace.sale_price ? pomace.sale_price.toString() : "",
+      notes: pomace.notes || "",
     })
     setEditingId(pomace.id)
     setIsOpen(true)
   }
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement de grignons?")) {
-      setPomaceList(pomaceList.filter((pomace) => pomace.id !== id))
+      try {
+        const response = await fetch(`/api/pomace?id=${id}`, { method: "DELETE" })
+        if (response.ok) {
+          await loadData()
+        } else {
+          alert("Erreur lors de la suppression")
+        }
+      } catch (error) {
+        alert("Erreur lors de la suppression")
+      }
     }
   }
 
@@ -131,8 +151,11 @@ export default function PomacePage() {
   }
 
   const totalPomace = pomaceList.reduce((sum, p) => sum + p.quantity_kg, 0)
-  const soldCount = pomaceList.filter((p) => p.sold).length
-  const unsoldCount = pomaceList.filter((p) => !p.sold).length
+  const soldCount = pomaceList.filter((p) => p.status === 'vendu').length
+  const unsoldCount = pomaceList.filter((p) => p.status !== 'vendu').length
+  const totalSalesRevenue = pomaceList
+    .filter((p) => p.status === 'vendu' && p.sale_price)
+    .reduce((sum, p) => sum + (p.sale_price || 0), 0)
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -149,7 +172,7 @@ export default function PomacePage() {
                 <Button
                   onClick={() => {
                     setEditingId(null)
-                    setFormData({ date: "", quantity_kg: "", destination: "", sold: false, notes: "" })
+                    setFormData({ collection_date: "", quantity_kg: "", status: "stocké", customer_buyer: "", sale_price: "", notes: "" })
                   }}
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -165,11 +188,11 @@ export default function PomacePage() {
                 </DialogHeader>
                 <form onSubmit={handleAddPomace} className="space-y-3">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Date *</label>
+                    <label className="text-sm font-medium">Date de collecte *</label>
                     <Input
                       type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      value={formData.collection_date}
+                      onChange={(e) => setFormData({ ...formData, collection_date: e.target.value })}
                       required
                     />
                   </div>
@@ -184,24 +207,35 @@ export default function PomacePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Destination</label>
+                    <label className="text-sm font-medium">Statut</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                    >
+                      <option value="stocké">Stocké</option>
+                      <option value="vendu">Vendu</option>
+                      <option value="donné">Donné</option>
+                      <option value="jeté">Jeté</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Client acheteur</label>
                     <Input
-                      value={formData.destination}
-                      onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-                      placeholder="ex: Compostage, Alimentation animale"
+                      value={formData.customer_buyer}
+                      onChange={(e) => setFormData({ ...formData, customer_buyer: e.target.value })}
+                      placeholder="Nom du client (si vendu)"
                     />
                   </div>
-                  <div className="space-y-2 flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="sold"
-                      checked={formData.sold}
-                      onChange={(e) => setFormData({ ...formData, sold: e.target.checked })}
-                      className="w-4 h-4"
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Prix de vente (DT)</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.sale_price}
+                      onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
+                      placeholder="Prix de vente (si applicable)"
                     />
-                    <label htmlFor="sold" className="text-sm font-medium">
-                      Vendu
-                    </label>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Notes</label>
@@ -219,7 +253,7 @@ export default function PomacePage() {
           </div>
 
           {/* Statistics */}
-          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
             <Card className="border-primary/10">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium">Grignons Totaux</CardTitle>
@@ -243,11 +277,23 @@ export default function PomacePage() {
             </Card>
             <Card className="border-primary/10">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Non Vendus</CardTitle>
+                <CardTitle className="text-sm font-medium">Stockés</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{unsoldCount}</div>
                 <p className="mt-1 text-xs text-muted-foreground">enregistrements</p>
+              </CardContent>
+            </Card>
+            <Card className="border-primary/10">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Revenus Ventes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-2">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  <div className="text-2xl font-bold">{totalSalesRevenue.toFixed(2)}</div>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">DT</p>
               </CardContent>
             </Card>
           </div>
@@ -266,10 +312,11 @@ export default function PomacePage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
+                        <TableHead>Date de collecte</TableHead>
                         <TableHead>Quantité (kg)</TableHead>
-                        <TableHead>Destination</TableHead>
                         <TableHead>Statut</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Prix de vente</TableHead>
                         <TableHead>Notes</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -277,19 +324,22 @@ export default function PomacePage() {
                     <TableBody>
                       {pomaceList.map((pomace) => (
                         <TableRow key={pomace.id}>
-                          <TableCell>{pomace.date}</TableCell>
+                          <TableCell>{pomace.collection_date}</TableCell>
                           <TableCell className="font-medium">{pomace.quantity_kg.toFixed(2)}</TableCell>
-                          <TableCell>{pomace.destination}</TableCell>
                           <TableCell>
                             <span
                               className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${
-                                pomace.sold ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                                pomace.status === 'vendu' ? "bg-green-100 text-green-800" :
+                                pomace.status === 'stocké' ? "bg-blue-100 text-blue-800" :
+                                "bg-yellow-100 text-yellow-800"
                               }`}
                             >
-                              {pomace.sold ? "Vendu" : "Non vendu"}
+                              {pomace.status}
                             </span>
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{pomace.notes}</TableCell>
+                          <TableCell>{pomace.customer_buyer || '-'}</TableCell>
+                          <TableCell>{pomace.sale_price ? `${pomace.sale_price.toFixed(2)} DT` : '-'}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{pomace.notes || '-'}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex gap-2 justify-end">
                               <Button variant="ghost" size="sm" onClick={() => handleEdit(pomace)}>

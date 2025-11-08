@@ -20,24 +20,24 @@ export async function POST(request: NextRequest) {
   try {
     initializeDatabase()
     const db = getDatabase()
-    const { operation_id, quantity_kg, collection_date, destination, notes } = await request.json()
+    const { collection_date, quantity_kg, status, customer_buyer, sale_price, notes } = await request.json()
 
     const result = db
       .prepare(`
-      INSERT INTO pomace (operation_id, quantity_kg, collection_date, destination, processing_status, notes)
+      INSERT INTO pomace (collection_date, quantity_kg, status, customer_buyer, sale_price, notes)
       VALUES (?, ?, ?, ?, ?, ?)
     `)
-      .run(operation_id, quantity_kg, collection_date, destination, "pending", notes)
+      .run(collection_date, quantity_kg, status || 'stocké', customer_buyer, sale_price, notes)
 
     return NextResponse.json({
       success: true,
       data: {
         id: result.lastInsertRowid,
-        operation_id,
-        quantity_kg,
         collection_date,
-        destination,
-        processing_status: "pending",
+        quantity_kg,
+        status: status || 'stocké',
+        customer_buyer,
+        sale_price,
         notes,
       },
     })
@@ -47,6 +47,53 @@ export async function POST(request: NextRequest) {
         error: error instanceof Error ? error.message : "Failed to create pomace record",
       },
       { status: 400 },
+    )
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    initializeDatabase()
+    const db = getDatabase()
+    const { id, collection_date, quantity_kg, status, customer_buyer, sale_price, notes } = await request.json()
+
+    db.prepare(`
+      UPDATE pomace
+      SET collection_date = ?, quantity_kg = ?, status = ?, customer_buyer = ?, sale_price = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(collection_date, quantity_kg, status, customer_buyer, sale_price, notes, id)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Failed to update pomace record",
+      },
+      { status: 400 },
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    initializeDatabase()
+    const db = getDatabase()
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 })
+    }
+
+    db.prepare("DELETE FROM pomace WHERE id = ?").run(id)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Failed to delete pomace record",
+      },
+      { status: 500 },
     )
   }
 }

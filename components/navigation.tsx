@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Droplets, Menu, LogOut } from "lucide-react"
@@ -12,6 +13,7 @@ interface NavigationProps {
 
 export default function Navigation({ onLogout }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname()
 
   const navLinks = [
     { href: "/", label: "Tableau de Bord", icon: "📊" },
@@ -41,7 +43,10 @@ export default function Navigation({ onLogout }: NavigationProps) {
         <nav className="hidden gap-1 md:flex">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <Button variant="ghost" className="text-sm">
+              <Button 
+                variant="ghost" 
+                className={`text-sm ${pathname === link.href ? 'bg-primary/10 text-primary hover:bg-primary/20' : ''}`}
+              >
                 {link.label}
               </Button>
             </Link>
@@ -73,7 +78,10 @@ export default function Navigation({ onLogout }: NavigationProps) {
               <nav className="flex flex-col gap-2 pt-6">
                 {navLinks.map((link) => (
                   <Link key={link.href} href={link.href} onClick={() => setIsOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
+                    <Button 
+                      variant="ghost" 
+                      className={`w-full justify-start ${pathname === link.href ? 'bg-primary/10 text-primary hover:bg-primary/20' : ''}`}
+                    >
                       {link.label}
                     </Button>
                   </Link>
