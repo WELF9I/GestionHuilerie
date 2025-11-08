@@ -26,12 +26,16 @@ export async function POST(request: NextRequest) {
     const db = getDatabase()
     const { employee_id, payment_date, payment_type, amount, month, notes } = await request.json()
 
+    // Ensure month is stored in YYYY-MM format. If client didn't provide it,
+    // derive it from the payment_date so month-based filters still work.
+    const monthValue = month || (payment_date ? String(payment_date).slice(0, 7) : null)
+
     const result = db
       .prepare(`
         INSERT INTO payroll (employee_id, payment_date, payment_type, amount, month, notes)
         VALUES (?, ?, ?, ?, ?, ?)
       `)
-      .run(employee_id, payment_date, payment_type, amount, month, notes)
+      .run(employee_id, payment_date, payment_type, amount, monthValue, notes)
 
     return NextResponse.json({ id: result.lastInsertRowid })
   } catch (error) {
