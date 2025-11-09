@@ -71,6 +71,142 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Modules Principaux */}
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-foreground mb-6">Modules Principaux</h2>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {/* Employés */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/employees")}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-lg">👥</span>
+                    Employés
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Gestion du personnel</p>
+                </CardContent>
+              </Card>
+
+              {/* Paie */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/payroll")}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-lg">💵</span>
+                    Paie
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Gestion des salaires</p>
+                </CardContent>
+              </Card>
+
+              {/* Fournisseurs */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/suppliers")}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-lg">🚚</span>
+                    Fournisseurs
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Gestion des fournisseurs</p>
+                </CardContent>
+              </Card>
+
+              {/* Achats d'Huile */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/purchases")}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-lg">🫒</span>
+                    Achats d'Huile
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Achats et stocks</p>
+                </CardContent>
+              </Card>
+
+              {/* Pressage */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/pressing")}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-lg">⚙️</span>
+                    Pressage
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Transformation des olives</p>
+                </CardContent>
+              </Card>
+
+              {/* Citernes */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/tanks")}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-lg">🏭</span>
+                    Citernes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Stockage d'huile</p>
+                </CardContent>
+              </Card>
+
+              {/* Ventes */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/sales")}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-lg">💰</span>
+                    Ventes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Ventes d'huile</p>
+                </CardContent>
+              </Card>
+
+              {/* Maintenance */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/maintenance")}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-lg">🔧</span>
+                    Maintenance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Frais de maintenance</p>
+                </CardContent>
+              </Card>
+
+              {/* Grignons */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/pomace")}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-lg">🌾</span>
+                    Grignons
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Gestion des résidus</p>
+                </CardContent>
+              </Card>
+
+              {/* Paramètres */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/settings")}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-lg">⚙️</span>
+                    Paramètres
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Configuration système</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </main>
     </div>

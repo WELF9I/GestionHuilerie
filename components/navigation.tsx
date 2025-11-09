@@ -24,6 +24,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
     { href: "/pressing", label: "Pressage", icon: "⚙️" },
     { href: "/tanks", label: "Citernes", icon: "🏭" },
     { href: "/sales", label: "Ventes", icon: "💰" },
+    { href: "/maintenance", label: "Maintenance", icon: "🔧" },
     { href: "/pomace", label: "Grignons", icon: "🌾" },
     { href: "/settings", label: "Paramètres", icon: "⚙️" },
   ]

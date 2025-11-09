@@ -180,4 +180,19 @@ export function initializeDatabase() {
       FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE CASCADE
     )
   `)
+
+  // Maintenance Fees table
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS maintenance_fees (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      expense_date DATE NOT NULL,
+      description TEXT NOT NULL,
+      amount REAL NOT NULL,
+      category TEXT DEFAULT 'maintenance',
+      provider TEXT,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
 }
