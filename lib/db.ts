@@ -5,7 +5,11 @@ let db: Database.Database | null = null
 
 export function getDatabase() {
   if (!db) {
-    const dbPath = path.join(process.cwd(), "data", "huilerie.db")
+    // Allow Electron production to pass a custom DB path via env
+    const overridden = process.env.HUILERIE_DB_PATH
+    const dbPath = overridden && overridden.length > 0
+      ? overridden
+      : path.join(process.cwd(), "data", "huilerie.db")
     db = new Database(dbPath)
     db.pragma("journal_mode = WAL")
   }

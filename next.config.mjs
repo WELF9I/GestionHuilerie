@@ -6,6 +6,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Enable standalone output so Electron can run the server.js
+  output: 'standalone',
 }
 
 export default nextConfig
