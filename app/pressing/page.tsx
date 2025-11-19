@@ -246,7 +246,7 @@ export default function PressingPage() {
                 <CardTitle className="text-sm">Huile Totale</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{totalOil.toFixed(2)} L</div>
+                <div className="text-3xl font-bold">{totalOil.toFixed(2)} Kg</div>
               </CardContent>
             </Card>
             <Card>

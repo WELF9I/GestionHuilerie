@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
       if (quantity > tank.current_volume) {
         return NextResponse.json({ 
-          error: `Stock insuffisant! La citerne ${tank.tank_code} contient seulement ${tank.current_volume}L. Quantité demandée: ${quantity}L.` 
+          error: `Stock insuffisant! La citerne ${tank.tank_code} contient seulement ${tank.current_volume}Kg. Quantité demandée: ${quantity}Kg.`
         }, { status: 400 })
       }
 

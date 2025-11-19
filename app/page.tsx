@@ -227,8 +227,8 @@ export default function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-foreground">{stats.currentOilStock.toFixed(0)} L</div>
-                <p className="mt-2 text-xs text-muted-foreground">Litres disponibles</p>
+                <div className="text-3xl font-bold text-foreground">{stats.currentOilStock.toFixed(0)} Kg</div>
+                <p className="mt-2 text-xs text-muted-foreground">Kilos disponibles</p>
               </CardContent>
             </Card>
 

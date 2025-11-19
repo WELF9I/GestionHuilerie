@@ -99,7 +99,7 @@ export default function PurchasesPage() {
     const purchaseQuantity = Number(formData.quantity_kg)
     
     if (totalAllocated !== purchaseQuantity) {
-      alert(`La quantité totale affectée (${totalAllocated}L) doit être égale à la quantité achetée (${purchaseQuantity}L)`)
+      alert(`La quantité totale affectée (${totalAllocated}Kg) doit être égale à la quantité achetée (${purchaseQuantity}Kg)`)
       return
     }
 
@@ -110,7 +110,7 @@ export default function PurchasesPage() {
       if (tank) {
         const availableSpace = tank.capacity_liters - tank.current_volume
         if (Number(alloc.quantity) > availableSpace) {
-          alert(`La citerne ${tank.tank_code} n'a que ${availableSpace}L d'espace libre`)
+          alert(`La citerne ${tank.tank_code} n'a que ${availableSpace}Kg d'espace libre`)
           return
         }
       }
@@ -276,7 +276,7 @@ export default function PurchasesPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Quantité (L) *</label>
+                      <label className="text-sm font-medium">Quantité (Kg) *</label>
                       <Input
                         type="number"
                         step="0.01"
@@ -331,14 +331,14 @@ export default function PurchasesPage() {
                               <SelectContent>
                                 {getAvailableTanks(alloc.tank_id).map((t) => (
                                   <SelectItem key={t.id} value={t.id.toString()}>
-                                    {t.tank_code} - {t.oil_type || 'Non spécifié'} (Libre: {(t.capacity_liters - t.current_volume).toFixed(0)}L)
+                                    {t.tank_code} - {t.oil_type || 'Non spécifié'} (Libre: {(t.capacity_liters - t.current_volume).toFixed(0)}Kg)
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                               {tank && (
                                 <p className="text-xs text-muted-foreground">
-                                  Capacité libre: {availableSpace.toFixed(0)}L sur {tank.capacity_liters}L
+                                  Capacité libre: {availableSpace.toFixed(0)}Kg sur {tank.capacity_liters}Kg
                                 </p>
                               )}
                             </div>
@@ -346,7 +346,7 @@ export default function PurchasesPage() {
                               <Input
                                 type="number"
                                 step="0.01"
-                                placeholder="Quantité (L)"
+                                placeholder="Quantité (Kg)"
                                 value={alloc.quantity}
                                 onChange={(e) => updateTankAllocation(index, 'quantity', e.target.value)}
                               />
@@ -368,16 +368,16 @@ export default function PurchasesPage() {
                       <div className="bg-muted p-3 rounded-lg space-y-1">
                         <div className="flex justify-between text-sm">
                           <span>Quantité achetée:</span>
-                          <span className="font-medium">{Number(formData.quantity_kg || 0).toFixed(2)} L</span>
+                          <span className="font-medium">{Number(formData.quantity_kg || 0).toFixed(2)} Kg</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span>Total affecté:</span>
-                          <span className="font-medium">{getTotalAllocated().toFixed(2)} L</span>
+                          <span className="font-medium">{getTotalAllocated().toFixed(2)} Kg</span>
                         </div>
                         <div className="flex justify-between text-sm font-bold">
                           <span>Reste à affecter:</span>
                           <span className={getRemainingToAllocate() === 0 ? "text-green-600" : "text-orange-600"}>
-                            {getRemainingToAllocate().toFixed(2)} L
+                            {getRemainingToAllocate().toFixed(2)} Kg
                           </span>
                         </div>
                       </div>
@@ -441,7 +441,7 @@ export default function PurchasesPage() {
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Fournisseur</TableHead>
-                        <TableHead>Quantité (L)</TableHead>
+                        <TableHead>Quantité (Kg)</TableHead>
                         <TableHead>P.U (TND)</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead>Avance</TableHead>

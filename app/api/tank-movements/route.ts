@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       // Check if new volume exceeds capacity
       if (newVolume > tank.capacity_liters) {
         return NextResponse.json({ 
-          error: `Capacité dépassée! La citerne ${tank.tank_code} a une capacité de ${tank.capacity_liters}L. Volume actuel: ${tank.current_volume}L. Volume après ajout: ${newVolume}L.` 
+          error: `Capacité dépassée! La citerne ${tank.tank_code} a une capacité de ${tank.capacity_liters}Kg. Volume actuel: ${tank.current_volume}Kg. Volume après ajout: ${newVolume}Kg.`
         }, { status: 400 })
       }
 
@@ -62,10 +62,10 @@ export async function POST(request: NextRequest) {
       `)
         .run(movement_date, movement_type, tank_id, quantity_liters, reference || "", notes || "")
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         id: result.lastInsertRowid,
         success: true,
-        message: `Mouvement enregistré avec succès. Nouveau volume: ${newVolume.toFixed(2)}L`
+        message: `Mouvement enregistré avec succès. Nouveau volume: ${newVolume.toFixed(2)}Kg`
       })
 
     } else if (movement_type === "sortie") {
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       // Check if there's enough oil to withdraw
       if (quantity > tank.current_volume) {
         return NextResponse.json({ 
-          error: `Stock insuffisant! La citerne ${tank.tank_code} contient seulement ${tank.current_volume}L. Quantité demandée: ${quantity}L.` 
+          error: `Stock insuffisant! La citerne ${tank.tank_code} contient seulement ${tank.current_volume}Kg. Quantité demandée: ${quantity}Kg.`
         }, { status: 400 })
       }
 
@@ -100,10 +100,10 @@ export async function POST(request: NextRequest) {
       `)
         .run(movement_date, movement_type, tank_id, quantity_liters, reference || "", notes || "")
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         id: result.lastInsertRowid,
         success: true,
-        message: `Mouvement enregistré avec succès. Nouveau volume: ${newVolume.toFixed(2)}L`
+        message: `Mouvement enregistré avec succès. Nouveau volume: ${newVolume.toFixed(2)}Kg`
       })
 
     } else {

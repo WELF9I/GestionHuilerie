@@ -248,7 +248,7 @@ export default function TanksPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Capacité (L) *</label>
+                      <label className="text-sm font-medium">Capacité (Kg) *</label>
                       <Input
                         type="number"
                         step="0.01"
@@ -318,7 +318,7 @@ export default function TanksPage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Quantité (L) *</label>
+                      <label className="text-sm font-medium">Quantité (Kg) *</label>
                       <Input
                         type="number"
                         step="0.01"
@@ -348,7 +348,7 @@ export default function TanksPage() {
                 <CardTitle className="text-sm">Capacité Totale</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{totalCapacity.toFixed(0)} L</div>
+                <div className="text-3xl font-bold">{totalCapacity.toFixed(0)} Kg</div>
               </CardContent>
             </Card>
             <Card>
@@ -356,7 +356,7 @@ export default function TanksPage() {
                 <CardTitle className="text-sm">Volume Actuel</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{totalVolume.toFixed(2)} L</div>
+                <div className="text-3xl font-bold">{totalVolume.toFixed(2)} Kg</div>
               </CardContent>
             </Card>
             <Card>
@@ -399,8 +399,8 @@ export default function TanksPage() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Capacité: {tank.capacity_liters} L</p>
-                        <p className="text-sm text-muted-foreground">Contenu: {tank.current_volume.toFixed(2)} L</p>
+                        <p className="text-sm text-muted-foreground">Capacité: {tank.capacity_liters} Kg</p>
+                        <p className="text-sm text-muted-foreground">Contenu: {tank.current_volume.toFixed(2)} Kg</p>
                         <div className="w-full bg-muted h-4 rounded-full overflow-hidden">
                           <div
                             className={`h-full ${fillColor} transition-all`}
@@ -436,7 +436,7 @@ export default function TanksPage() {
                         <TableHead>Date</TableHead>
                         <TableHead>Citerne</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead>Quantité (L)</TableHead>
+                        <TableHead>Quantité (Kg)</TableHead>
                         <TableHead>Référence</TableHead>
                       </TableRow>
                     </TableHeader>

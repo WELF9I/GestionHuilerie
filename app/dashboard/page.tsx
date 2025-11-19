@@ -46,7 +46,7 @@ export default function DashboardPage() {
                 <CardTitle className="text-sm font-medium">Oil Output</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0 L</div>
+                <div className="text-2xl font-bold">0 Kg</div>
                 <p className="mt-1 text-xs text-muted-foreground">Total produced</p>
               </CardContent>
             </Card>

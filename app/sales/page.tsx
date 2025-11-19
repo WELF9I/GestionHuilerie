@@ -161,7 +161,7 @@ export default function SalesPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Quantité (L) *</label>
+                    <label className="text-sm font-medium">Quantité (Kg) *</label>
                     <Input
                       type="number"
                       step="0.01"
@@ -192,7 +192,7 @@ export default function SalesPage() {
                       <SelectContent>
                         {tanks.map((t) => (
                           <SelectItem key={t.id} value={t.id.toString()}>
-                            {t.tank_code} ({t.current_volume}L)
+                            {t.tank_code} ({t.current_volume}Kg)
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -230,7 +230,7 @@ export default function SalesPage() {
                 <CardTitle className="text-sm">Quantité Vendue</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{totalQuantity.toFixed(2)} L</div>
+                <div className="text-3xl font-bold">{totalQuantity.toFixed(2)} Kg</div>
               </CardContent>
             </Card>
             <Card>
@@ -238,7 +238,7 @@ export default function SalesPage() {
                 <CardTitle className="text-sm">Prix Moyen</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{avgPrice} DT/L</div>
+                <div className="text-3xl font-bold">{avgPrice} DT/Kg</div>
               </CardContent>
             </Card>
           </div>
@@ -257,7 +257,7 @@ export default function SalesPage() {
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Client</TableHead>
-                        <TableHead>Quantité (L)</TableHead>
+                        <TableHead>Quantité (Kg)</TableHead>
                         <TableHead>P.U (TND)</TableHead>
                         <TableHead>Total (TND)</TableHead>
                         <TableHead>Actions</TableHead>
