@@ -26,6 +26,19 @@ interface Supplier {
   notes: string
 }
 
+interface Purchase {
+  id: number
+  purchase_date: string
+  supplier_id: number
+  quantity_kg: number
+  unit_price: number
+  total_amount: number
+  advance_paid: number
+  remaining_balance: number
+  batch_number: string
+  supplier_name: string
+}
+
 export default function SuppliersPage() {
   const router = useRouter()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -35,6 +48,9 @@ export default function SuppliersPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [formData, setFormData] = useState({ name: "", phone: "", address: "", notes: "" })
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [supplierHistory, setSupplierHistory] = useState<Purchase[]>([])
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
 
   useEffect(() => {
     const isAuth = localStorage.getItem("huilerie_auth") === "true"
@@ -120,6 +136,22 @@ export default function SuppliersPage() {
       } catch (error) {
         alert("Erreur lors de la suppression")
       }
+    }
+  }
+
+  const loadSupplierHistory = async (supplierId: number, supplier: Supplier) => {
+    try {
+      const response = await fetch(`/api/purchases`)
+      if (response.ok) {
+        const allPurchases = await response.json()
+        const supplierPurchases = allPurchases.filter((purchase: any) => purchase.supplier_id === supplierId)
+        setSupplierHistory(supplierPurchases)
+        setSelectedSupplier(supplier)
+        setIsHistoryOpen(true)
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+      alert("Erreur lors du chargement de l'historique")
     }
   }
 
@@ -234,19 +266,29 @@ export default function SuppliersPage() {
                     </TableHeader>
                     <TableBody>
                       {filteredSuppliers.map((supplier) => (
-                        <TableRow key={supplier.id}>
+                        <TableRow key={supplier.id} className="cursor-pointer hover:bg-muted/50" onClick={() => loadSupplierHistory(supplier.id, supplier)}>
                           <TableCell className="font-medium">{supplier.name}</TableCell>
                           <TableCell>{supplier.phone}</TableCell>
                           <TableCell>{supplier.address}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex gap-2 justify-end">
-                              <Button variant="ghost" size="sm" onClick={() => handleEdit(supplier)}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(supplier);
+                                }}
+                              >
                                 <Edit2 className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDelete(supplier.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(supplier.id);
+                                }}
                                 className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -263,6 +305,53 @@ export default function SuppliersPage() {
           </Card>
         </div>
       </main>
+
+      {/* Purchase History Popup */}
+      <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Historique des Achats - {selectedSupplier?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            {supplierHistory.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                Aucun historique d'achat pour ce fournisseur
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-4">Date</th>
+                      <th className="text-left py-2 px-4">Lot</th>
+                      <th className="text-left py-2 px-4">Quantité (Kg)</th>
+                      <th className="text-left py-2 px-4">Prix Unitaire (TND)</th>
+                      <th className="text-left py-2 px-4">Total (TND)</th>
+                      <th className="text-left py-2 px-4">Avance (TND)</th>
+                      <th className="text-left py-2 px-4">Solde (TND)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {supplierHistory.map((purchase) => (
+                      <tr key={purchase.id} className="border-b hover:bg-muted/50">
+                        <td className="py-2 px-4">{purchase.purchase_date}</td>
+                        <td className="py-2 px-4 font-medium">{purchase.batch_number}</td>
+                        <td className="py-2 px-4">{purchase.quantity_kg}</td>
+                        <td className="py-2 px-4">{purchase.unit_price}</td>
+                        <td className="py-2 px-4 font-bold text-green-600">{purchase.total_amount.toFixed(2)}</td>
+                        <td className="py-2 px-4">{purchase.advance_paid}</td>
+                        <td className="py-2 px-4">{purchase.remaining_balance}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

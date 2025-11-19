@@ -18,6 +18,12 @@ interface Tank {
   current_volume: number
 }
 
+interface Tank {
+  id: number
+  tank_code: string
+  current_volume: number
+}
+
 interface Sale {
   id: number
   sale_date: string
@@ -33,6 +39,8 @@ export default function SalesPage() {
   const [tanks, setTanks] = useState<Tank[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filteredSales, setFilteredSales] = useState<Sale[]>([])
   const [formData, setFormData] = useState({
     sale_date: new Date().toISOString().split("T")[0],
     customer_name: "",
@@ -41,6 +49,25 @@ export default function SalesPage() {
     tank_id: "",
     notes: "",
   })
+
+  // Debounce hook
+  function useDebounce(value: string, delay: number) {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value);
+      }, delay);
+
+      return () => {
+        clearTimeout(handler);
+      };
+    }, [value, delay]);
+
+    return debouncedValue;
+  }
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // 300ms delay
 
   useEffect(() => {
     const isAuth = localStorage.getItem("huilerie_auth") === "true"
@@ -53,7 +80,10 @@ export default function SalesPage() {
 
   const loadData = async () => {
     try {
-      const [salesRes, tanksRes] = await Promise.all([fetch("/api/sales"), fetch("/api/tanks")])
+      const [salesRes, tanksRes] = await Promise.all([
+        fetch("/api/sales"),
+        fetch("/api/tanks")
+      ])
       if (salesRes.ok) setSales(await salesRes.json())
       if (tanksRes.ok) setTanks(await tanksRes.json())
     } catch (error) {
@@ -62,6 +92,19 @@ export default function SalesPage() {
       setIsLoading(false)
     }
   }
+
+  // Filter sales based on search term
+  useEffect(() => {
+    if (debouncedSearchTerm.trim() === "") {
+      setFilteredSales(sales);
+    } else {
+      const term = debouncedSearchTerm.toLowerCase();
+      const filtered = sales.filter(sale =>
+        sale.customer_name.toLowerCase().includes(term)
+      );
+      setFilteredSales(filtered);
+    }
+  }, [debouncedSearchTerm, sales]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -213,6 +256,16 @@ export default function SalesPage() {
             </Dialog>
           </div>
 
+          {/* Search Bar */}
+          <div className="mb-4">
+            <Input
+              placeholder="Rechercher par nom du client..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md"
+            />
+          </div>
+
           <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="pb-2">
@@ -245,10 +298,10 @@ export default function SalesPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Ventes ({sales.length})</CardTitle>
+              <CardTitle>Ventes ({filteredSales.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              {sales.length === 0 ? (
+              {filteredSales.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">Aucune vente enregistrée</div>
               ) : (
                 <div className="overflow-x-auto">
@@ -264,7 +317,7 @@ export default function SalesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sales.map((s) => (
+                      {filteredSales.map((s) => (
                         <TableRow key={s.id}>
                           <TableCell>{s.sale_date}</TableCell>
                           <TableCell className="font-semibold">{s.customer_name}</TableCell>

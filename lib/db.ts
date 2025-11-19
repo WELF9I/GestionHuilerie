@@ -27,10 +27,11 @@ export function closeDatabase() {
 
 export function initializeDatabase() {
   const database = getDatabase()
-  
+
   // Enable foreign keys
   database.pragma("foreign_keys = ON")
 
+  // Create all tables
   // Employees table
   database.exec(`
     CREATE TABLE IF NOT EXISTS employees (
@@ -83,14 +84,15 @@ export function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       operation_date DATE NOT NULL,
       olives_quantity_kg REAL NOT NULL,
-      oil_produced_liters REAL NOT NULL,
-      pomace_quantity_kg REAL,
-      rendement_percentage REAL,
+      total_price REAL,
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `)
+
+  // Run migration if needed
+  migratePressingTableIfRequired(database);
 
   // Tanks table
   database.exec(`
@@ -180,4 +182,55 @@ export function initializeDatabase() {
       FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE CASCADE
     )
   `)
+}
+
+function migratePressingTableIfRequired(database: any) {
+  // Check if migration is needed by checking if old columns exist
+  const tableInfo = database.prepare("PRAGMA table_info(pressing_operations)").all();
+  const hasOldColumns = tableInfo.some((col: any) =>
+    col.name === 'oil_produced_liters' ||
+    col.name === 'pomace_quantity_kg' ||
+    col.name === 'rendement_percentage'
+  );
+
+  if (hasOldColumns) {
+    console.log("Migrating pressing_operations table structure...");
+
+    // Create new table with desired structure
+    database.exec(`
+      CREATE TABLE pressing_operations_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        operation_date DATE NOT NULL,
+        olives_quantity_kg REAL NOT NULL,
+        total_price REAL,
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Copy data from old table to new table
+    // Map old total_price column if it exists, otherwise use null
+    if (tableInfo.some((col: any) => col.name === 'total_price')) {
+      // If total_price already exists (from our updates), copy all data
+      database.exec(`
+        INSERT INTO pressing_operations_new (id, operation_date, olives_quantity_kg, total_price, notes, created_at, updated_at)
+        SELECT id, operation_date, olives_quantity_kg, total_price, notes, created_at, updated_at
+        FROM pressing_operations
+      `);
+    } else {
+      // If total_price doesn't exist yet, initialize it as null
+      database.exec(`
+        INSERT INTO pressing_operations_new (id, operation_date, olives_quantity_kg, total_price, notes, created_at, updated_at)
+        SELECT id, operation_date, olives_quantity_kg, NULL as total_price, notes, created_at, updated_at
+        FROM pressing_operations
+      `);
+    }
+
+    // Drop old table and rename new table
+    database.exec("DROP TABLE pressing_operations");
+    database.exec("ALTER TABLE pressing_operations_new RENAME TO pressing_operations");
+
+    console.log("Pressing operations table migrated successfully!");
+  }
 }

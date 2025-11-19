@@ -21,9 +21,7 @@ interface Operation {
   id: number
   operation_date: string
   olives_quantity_kg: number
-  oil_produced_liters: number
-  pomace_quantity_kg: number
-  rendement_percentage: number
+  total_price: number
   notes: string
 }
 
@@ -36,8 +34,7 @@ export default function PressingPage() {
   const [formData, setFormData] = useState({
     operation_date: new Date().toISOString().split("T")[0],
     olives_quantity_kg: "",
-    oil_produced_liters: "",
-    pomace_quantity_kg: "",
+    total_price: "",
     notes: "",
   })
 
@@ -66,7 +63,7 @@ export default function PressingPage() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.olives_quantity_kg || !formData.oil_produced_liters) {
+    if (!formData.olives_quantity_kg || !formData.total_price) {
       alert("Veuillez remplir les champs obligatoires")
       return
     }
@@ -88,7 +85,7 @@ export default function PressingPage() {
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.olives_quantity_kg || !formData.oil_produced_liters || !editingOperation) {
+    if (!formData.olives_quantity_kg || !formData.total_price || !editingOperation) {
       alert("Veuillez remplir les champs obligatoires")
       return
     }
@@ -113,8 +110,7 @@ export default function PressingPage() {
     setFormData({
       operation_date: operation.operation_date,
       olives_quantity_kg: operation.olives_quantity_kg.toString(),
-      oil_produced_liters: operation.oil_produced_liters.toString(),
-      pomace_quantity_kg: operation.pomace_quantity_kg?.toString() || "",
+      total_price: operation.total_price.toString(),
       notes: operation.notes || "",
     })
     setIsOpen(true)
@@ -124,8 +120,7 @@ export default function PressingPage() {
     setFormData({
       operation_date: new Date().toISOString().split("T")[0],
       olives_quantity_kg: "",
-      oil_produced_liters: "",
-      pomace_quantity_kg: "",
+      total_price: "",
       notes: "",
     })
     setEditingOperation(null)
@@ -157,11 +152,7 @@ export default function PressingPage() {
     )
   }
 
-  const totalOil = operations.reduce((sum, o) => sum + o.oil_produced_liters, 0)
-  const avgRendement =
-    operations.length > 0
-      ? (operations.reduce((sum, o) => sum + o.rendement_percentage, 0) / operations.length).toFixed(1)
-      : "0"
+  const totalRevenue = operations.reduce((sum, o) => sum + (o.total_price || 0), 0)
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -206,22 +197,12 @@ export default function PressingPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Huile Produite (kg) *</label>
+                    <label className="text-sm font-medium">Prix Total (DT) *</label>
                     <Input
                       type="number"
                       step="0.01"
-                      value={formData.oil_produced_liters}
-                      onChange={(e) => setFormData({ ...formData, oil_produced_liters: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Grignons Produits (kg)</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.pomace_quantity_kg}
-                      onChange={(e) => setFormData({ ...formData, pomace_quantity_kg: e.target.value })}
-                      placeholder="Optionnel"
+                      value={formData.total_price}
+                      onChange={(e) => setFormData({ ...formData, total_price: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -243,18 +224,18 @@ export default function PressingPage() {
           <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Huile Totale</CardTitle>
+                <CardTitle className="text-sm">Total Olives (kg)</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{totalOil.toFixed(2)} Kg</div>
+                <div className="text-3xl font-bold">{operations.reduce((sum, o) => sum + o.olives_quantity_kg, 0).toFixed(2)} Kg</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Rendement Moyen</CardTitle>
+                <CardTitle className="text-sm">Revenu Total</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{avgRendement}%</div>
+                <div className="text-3xl font-bold">{totalRevenue.toFixed(2)} DT</div>
               </CardContent>
             </Card>
             <Card>
@@ -281,9 +262,7 @@ export default function PressingPage() {
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Olives (kg)</TableHead>
-                        <TableHead>Huile (kg)</TableHead>
-                        <TableHead>Grignons (kg)</TableHead>
-                        <TableHead>Rendement %</TableHead>
+                        <TableHead>Prix (DT)</TableHead>
                         <TableHead>Notes</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
@@ -293,9 +272,7 @@ export default function PressingPage() {
                         <TableRow key={o.id}>
                           <TableCell>{o.operation_date}</TableCell>
                           <TableCell>{o.olives_quantity_kg}</TableCell>
-                          <TableCell>{o.oil_produced_liters}</TableCell>
-                          <TableCell>{o.pomace_quantity_kg || '-'}</TableCell>
-                          <TableCell className="font-bold">{o.rendement_percentage}%</TableCell>
+                          <TableCell>{o.total_price}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{o.notes || '-'}</TableCell>
                           <TableCell>
                             <div className="flex gap-2">
