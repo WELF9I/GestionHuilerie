@@ -12,6 +12,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, TrendingUp } from "lucide-react"
 import { formatDisplayDate } from "@/lib/date-utils"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 interface Tank {
   id: number
@@ -34,6 +43,18 @@ interface Sale {
   total_amount: number
 }
 
+interface PaginationData {
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  itemsPerPage: number
+}
+
+interface ApiSalesResponse {
+  data: Sale[]
+  pagination: PaginationData
+}
+
 export default function SalesPage() {
   const router = useRouter()
   const [sales, setSales] = useState<Sale[]>([])
@@ -49,6 +70,12 @@ export default function SalesPage() {
     unit_price: "",
     tank_id: "",
     notes: "",
+  })
+  const [pagination, setPagination] = useState<PaginationData>({
+    currentPage: 1,
+    totalPages: 0,
+    totalItems: 0,
+    itemsPerPage: 10,
   })
 
   // Debounce hook
@@ -70,6 +97,12 @@ export default function SalesPage() {
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // 300ms delay
 
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= pagination.totalPages) {
+      loadData(page)
+    }
+  }
+
   useEffect(() => {
     const isAuth = localStorage.getItem("huilerie_auth") === "true"
     if (!isAuth) {
@@ -79,13 +112,19 @@ export default function SalesPage() {
     loadData()
   }, [router])
 
-  const loadData = async () => {
+  const loadData = async (page = 1) => {
     try {
       const [salesRes, tanksRes] = await Promise.all([
-        fetch("/api/sales"),
+        fetch(`/api/sales?page=${page}&limit=${pagination.itemsPerPage}`),
         fetch("/api/tanks")
       ])
-      if (salesRes.ok) setSales(await salesRes.json())
+
+      if (salesRes.ok) {
+        const response = await salesRes.json() as ApiSalesResponse
+        setSales(response.data)
+        setPagination(response.pagination)
+      }
+
       if (tanksRes.ok) setTanks(await tanksRes.json())
     } catch (error) {
       console.error("Erreur:", error)
@@ -121,7 +160,8 @@ export default function SalesPage() {
         body: JSON.stringify(formData),
       })
       if (response.ok) {
-        await loadData()
+        // Reload the current page after adding a new sale
+        await loadData(pagination.currentPage)
         setFormData({
           sale_date: new Date().toISOString().split("T")[0],
           customer_name: "",
@@ -140,8 +180,11 @@ export default function SalesPage() {
   const handleDelete = async (id: number) => {
     if (confirm("Êtes-vous sûr?")) {
       try {
-        await fetch(`/api/sales/${id}`, { method: "DELETE" })
-        setSales(sales.filter((s) => s.id !== id))
+        const response = await fetch(`/api/sales/${id}`, { method: "DELETE" })
+        if (response.ok) {
+          // Reload the current page after deletion
+          await loadData(pagination.currentPage)
+        }
       } catch (error) {
         alert("Erreur")
       }
@@ -299,7 +342,7 @@ export default function SalesPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Ventes ({filteredSales.length})</CardTitle>
+              <CardTitle>Ventes ({pagination.totalItems})</CardTitle>
             </CardHeader>
             <CardContent>
               {filteredSales.length === 0 ? (
@@ -339,6 +382,97 @@ export default function SalesPage() {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+              )}
+              {/* Pagination controls */}
+              {pagination.totalPages > 1 && (
+                <div className="mt-6 flex flex-col items-center gap-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(pagination.currentPage - 1)}
+                          disabled={pagination.currentPage <= 1}
+                        >
+                          <PaginationPrevious className="!m-0" />
+                        </Button>
+                      </PaginationItem>
+
+                      {/* First page */}
+                      {pagination.currentPage > 2 && (
+                        <>
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handlePageChange(1)}>
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                          {pagination.currentPage > 3 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                        </>
+                      )}
+
+                      {/* Previous page */}
+                      {pagination.currentPage > 1 && (
+                        <PaginationItem>
+                          <PaginationLink onClick={() => handlePageChange(pagination.currentPage - 1)}>
+                            {pagination.currentPage - 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+
+                      {/* Current page */}
+                      <PaginationItem>
+                        <PaginationLink onClick={() => handlePageChange(pagination.currentPage)} isActive>
+                          {pagination.currentPage}
+                        </PaginationLink>
+                      </PaginationItem>
+
+                      {/* Next page */}
+                      {pagination.currentPage < pagination.totalPages && (
+                        <PaginationItem>
+                          <PaginationLink onClick={() => handlePageChange(pagination.currentPage + 1)}>
+                            {pagination.currentPage + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+
+                      {/* Last page */}
+                      {pagination.currentPage < pagination.totalPages - 1 && (
+                        <>
+                          {pagination.currentPage < pagination.totalPages - 2 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handlePageChange(pagination.totalPages)}>
+                              {pagination.totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </>
+                      )}
+
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(pagination.currentPage + 1)}
+                          disabled={pagination.currentPage >= pagination.totalPages}
+                        >
+                          <PaginationNext className="!m-0" />
+                        </Button>
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                  <div className="text-sm text-muted-foreground">
+                    Page {pagination.currentPage} sur {pagination.totalPages} •
+                    Total {pagination.totalItems} ventes
+                  </div>
                 </div>
               )}
             </CardContent>

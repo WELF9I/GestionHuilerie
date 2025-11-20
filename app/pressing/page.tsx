@@ -12,6 +12,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, Edit } from "lucide-react"
 import { formatDisplayDate } from "@/lib/date-utils"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 interface Purchase {
   id: number
@@ -26,6 +35,18 @@ interface Operation {
   notes: string
 }
 
+interface PaginationData {
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  itemsPerPage: number
+}
+
+interface ApiOperationsResponse {
+  data: Operation[]
+  pagination: PaginationData
+}
+
 export default function PressingPage() {
   const router = useRouter()
   const [operations, setOperations] = useState<Operation[]>([])
@@ -38,6 +59,12 @@ export default function PressingPage() {
     total_price: "",
     notes: "",
   })
+  const [pagination, setPagination] = useState<PaginationData>({
+    currentPage: 1,
+    totalPages: 0,
+    totalItems: 0,
+    itemsPerPage: 10,
+  })
 
   useEffect(() => {
     const isAuth = localStorage.getItem("huilerie_auth") === "true"
@@ -48,12 +75,13 @@ export default function PressingPage() {
     loadData()
   }, [router])
 
-  const loadData = async () => {
+  const loadData = async (page = 1) => {
     try {
-      const response = await fetch("/api/pressing")
+      const response = await fetch(`/api/pressing?page=${page}&limit=${pagination.itemsPerPage}`)
       if (response.ok) {
-        const data = await response.json()
-        setOperations(data || [])
+        const data = await response.json() as ApiOperationsResponse
+        setOperations(data.data || [])
+        setPagination(data.pagination)
       }
     } catch (error) {
       console.error("Erreur:", error)
@@ -76,7 +104,7 @@ export default function PressingPage() {
         body: JSON.stringify(formData),
       })
       if (response.ok) {
-        await loadData()
+        await loadData(pagination.currentPage)
         resetForm()
       }
     } catch (error) {
@@ -98,7 +126,7 @@ export default function PressingPage() {
         body: JSON.stringify(formData),
       })
       if (response.ok) {
-        await loadData()
+        await loadData(pagination.currentPage)
         resetForm()
       }
     } catch (error) {
@@ -131,11 +159,20 @@ export default function PressingPage() {
   const handleDelete = async (id: number) => {
     if (confirm("Êtes-vous sûr?")) {
       try {
-        await fetch(`/api/pressing/${id}`, { method: "DELETE" })
-        setOperations(operations.filter((o) => o.id !== id))
+        const response = await fetch(`/api/pressing/${id}`, { method: "DELETE" })
+        if (response.ok) {
+          // Reload the current page after deletion
+          await loadData(pagination.currentPage)
+        }
       } catch (error) {
         alert("Erreur")
       }
+    }
+  }
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= pagination.totalPages) {
+      loadData(page)
     }
   }
 
@@ -251,7 +288,7 @@ export default function PressingPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Historique ({operations.length})</CardTitle>
+              <CardTitle>Historique ({pagination.totalItems})</CardTitle>
             </CardHeader>
             <CardContent>
               {operations.length === 0 ? (
@@ -298,6 +335,97 @@ export default function PressingPage() {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+              )}
+              {/* Pagination controls */}
+              {pagination.totalPages > 1 && (
+                <div className="mt-6 flex flex-col items-center gap-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(pagination.currentPage - 1)}
+                          disabled={pagination.currentPage <= 1}
+                        >
+                          <PaginationPrevious className="!m-0" />
+                        </Button>
+                      </PaginationItem>
+
+                      {/* First page */}
+                      {pagination.currentPage > 2 && (
+                        <>
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handlePageChange(1)}>
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                          {pagination.currentPage > 3 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                        </>
+                      )}
+
+                      {/* Previous page */}
+                      {pagination.currentPage > 1 && (
+                        <PaginationItem>
+                          <PaginationLink onClick={() => handlePageChange(pagination.currentPage - 1)}>
+                            {pagination.currentPage - 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+
+                      {/* Current page */}
+                      <PaginationItem>
+                        <PaginationLink onClick={() => handlePageChange(pagination.currentPage)} isActive>
+                          {pagination.currentPage}
+                        </PaginationLink>
+                      </PaginationItem>
+
+                      {/* Next page */}
+                      {pagination.currentPage < pagination.totalPages && (
+                        <PaginationItem>
+                          <PaginationLink onClick={() => handlePageChange(pagination.currentPage + 1)}>
+                            {pagination.currentPage + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+
+                      {/* Last page */}
+                      {pagination.currentPage < pagination.totalPages - 1 && (
+                        <>
+                          {pagination.currentPage < pagination.totalPages - 2 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handlePageChange(pagination.totalPages)}>
+                              {pagination.totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </>
+                      )}
+
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(pagination.currentPage + 1)}
+                          disabled={pagination.currentPage >= pagination.totalPages}
+                        >
+                          <PaginationNext className="!m-0" />
+                        </Button>
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                  <div className="text-sm text-muted-foreground">
+                    Page {pagination.currentPage} sur {pagination.totalPages} •
+                    Total {pagination.totalItems} opérations
+                  </div>
                 </div>
               )}
             </CardContent>

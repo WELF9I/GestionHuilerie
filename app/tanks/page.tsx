@@ -12,6 +12,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { formatDisplayDate } from "@/lib/date-utils"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 interface Tank {
   id: number
@@ -30,6 +39,18 @@ interface Movement {
   reference: string
 }
 
+interface PaginationData {
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  itemsPerPage: number
+}
+
+interface ApiMovementsResponse {
+  data: Movement[]
+  pagination: PaginationData
+}
+
 export default function TanksPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -46,6 +67,12 @@ export default function TanksPage() {
     quantity_liters: "",
     reference: "",
   })
+  const [movementsPagination, setMovementsPagination] = useState<PaginationData>({
+    currentPage: 1,
+    totalPages: 0,
+    totalItems: 0,
+    itemsPerPage: 10,
+  })
 
   useEffect(() => {
     const isAuth = localStorage.getItem("huilerie_auth") === "true"
@@ -56,11 +83,18 @@ export default function TanksPage() {
     loadData()
   }, [router])
 
-  const loadData = async () => {
+  const loadData = async (page = 1) => {
     try {
-      const [tanksRes, movementsRes] = await Promise.all([fetch("/api/tanks"), fetch("/api/tank-movements")])
+      const [tanksRes, movementsRes] = await Promise.all([
+        fetch("/api/tanks"),
+        fetch(`/api/tank-movements?page=${page}&limit=${movementsPagination.itemsPerPage}`)
+      ])
       if (tanksRes.ok) setTanks(await tanksRes.json())
-      if (movementsRes.ok) setMovements(await movementsRes.json())
+      if (movementsRes.ok) {
+        const response = await movementsRes.json() as ApiMovementsResponse
+        setMovements(response.data)
+        setMovementsPagination(response.pagination)
+      }
     } catch (error) {
       console.error("Erreur:", error)
     } finally {
@@ -137,7 +171,7 @@ export default function TanksPage() {
           title: "Succès",
           description: result.message || "Mouvement enregistré avec succès",
         })
-        await loadData()
+        await loadData(movementsPagination.currentPage)
         setFormMove({
           movement_date: new Date().toISOString().split("T")[0],
           tank_id: "",
@@ -167,7 +201,7 @@ export default function TanksPage() {
       try {
         const response = await fetch(`/api/tanks/${id}`, { method: "DELETE" })
         const result = await response.json()
-        
+
         if (response.ok) {
           if (result.type === "soft_delete") {
             toast({
@@ -197,6 +231,12 @@ export default function TanksPage() {
           variant: "destructive",
         })
       }
+    }
+  }
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= movementsPagination.totalPages) {
+      loadData(page)
     }
   }
 
@@ -424,7 +464,7 @@ export default function TanksPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Historique des Mouvements</CardTitle>
+              <CardTitle>Historique des Mouvements ({movementsPagination.totalItems})</CardTitle>
             </CardHeader>
             <CardContent>
               {movements.length === 0 ? (
@@ -459,6 +499,97 @@ export default function TanksPage() {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+              )}
+              {/* Pagination controls */}
+              {movementsPagination.totalPages > 1 && (
+                <div className="mt-6 flex flex-col items-center gap-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(movementsPagination.currentPage - 1)}
+                          disabled={movementsPagination.currentPage <= 1}
+                        >
+                          <PaginationPrevious className="!m-0" />
+                        </Button>
+                      </PaginationItem>
+
+                      {/* First page */}
+                      {movementsPagination.currentPage > 2 && (
+                        <>
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handlePageChange(1)}>
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                          {movementsPagination.currentPage > 3 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                        </>
+                      )}
+
+                      {/* Previous page */}
+                      {movementsPagination.currentPage > 1 && (
+                        <PaginationItem>
+                          <PaginationLink onClick={() => handlePageChange(movementsPagination.currentPage - 1)}>
+                            {movementsPagination.currentPage - 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+
+                      {/* Current page */}
+                      <PaginationItem>
+                        <PaginationLink onClick={() => handlePageChange(movementsPagination.currentPage)} isActive>
+                          {movementsPagination.currentPage}
+                        </PaginationLink>
+                      </PaginationItem>
+
+                      {/* Next page */}
+                      {movementsPagination.currentPage < movementsPagination.totalPages && (
+                        <PaginationItem>
+                          <PaginationLink onClick={() => handlePageChange(movementsPagination.currentPage + 1)}>
+                            {movementsPagination.currentPage + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+
+                      {/* Last page */}
+                      {movementsPagination.currentPage < movementsPagination.totalPages - 1 && (
+                        <>
+                          {movementsPagination.currentPage < movementsPagination.totalPages - 2 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handlePageChange(movementsPagination.totalPages)}>
+                              {movementsPagination.totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </>
+                      )}
+
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(movementsPagination.currentPage + 1)}
+                          disabled={movementsPagination.currentPage >= movementsPagination.totalPages}
+                        >
+                          <PaginationNext className="!m-0" />
+                        </Button>
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                  <div className="text-sm text-muted-foreground">
+                    Page {movementsPagination.currentPage} sur {movementsPagination.totalPages} •
+                    Total {movementsPagination.totalItems} mouvements
+                  </div>
                 </div>
               )}
             </CardContent>

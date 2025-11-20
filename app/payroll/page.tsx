@@ -13,6 +13,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Edit2, DollarSign, TrendingUp } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { formatDisplayDate } from "@/lib/date-utils"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 interface Employee {
   id: number
@@ -30,6 +39,18 @@ interface PayrollRecord {
   amount: number
   month: string | null
   notes: string | null
+}
+
+interface PaginationData {
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  itemsPerPage: number
+}
+
+interface ApiPayrollResponse {
+  data: PayrollRecord[]
+  pagination: PaginationData
 }
 
 interface EmployeeBalance {
@@ -57,6 +78,12 @@ export default function PayrollPage() {
     month: new Date().toISOString().slice(0, 7),
     notes: "",
   })
+  const [pagination, setPagination] = useState<PaginationData>({
+    currentPage: 1,
+    totalPages: 0,
+    totalItems: 0,
+    itemsPerPage: 10,
+  })
 
   useEffect(() => {
     const isAuth = localStorage.getItem("huilerie_auth") === "true"
@@ -64,16 +91,22 @@ export default function PayrollPage() {
       router.push("/")
       return
     }
-    loadData()
-  }, [router])
+    loadData(1) // Load first page on initial load
+  }, [router, selectedMonth])
 
-  const loadData = async () => {
+  const loadData = async (page = 1) => {
     try {
       const [payrollRes, employeesRes] = await Promise.all([
-        fetch("/api/payroll"),
+        fetch(`/api/payroll?page=${page}&limit=${pagination.itemsPerPage}&month=${selectedMonth}`),
         fetch("/api/employees"),
       ])
-      if (payrollRes.ok) setPayrollRecords(await payrollRes.json())
+
+      if (payrollRes.ok) {
+        const response = await payrollRes.json() as ApiPayrollResponse
+        setPayrollRecords(response.data)
+        setPagination(response.pagination)
+      }
+
       if (employeesRes.ok) setEmployees(await employeesRes.json())
     } catch (error) {
       console.error("Erreur:", error)
@@ -97,7 +130,7 @@ export default function PayrollPage() {
           body: JSON.stringify(formData),
         })
         if (response.ok) {
-          await loadData()
+          await loadData(pagination.currentPage)
           resetForm()
         }
       } else {
@@ -107,7 +140,8 @@ export default function PayrollPage() {
           body: JSON.stringify(formData),
         })
         if (response.ok) {
-          await loadData()
+          // Reload the current page after adding a new record
+          await loadData(pagination.currentPage)
           resetForm()
         }
       }
@@ -145,8 +179,11 @@ export default function PayrollPage() {
   const handleDelete = async (id: number) => {
     if (confirm("Êtes-vous sûr?")) {
       try {
-        await fetch(`/api/payroll/${id}`, { method: "DELETE" })
-        setPayrollRecords(payrollRecords.filter((r) => r.id !== id))
+        const response = await fetch(`/api/payroll/${id}`, { method: "DELETE" })
+        if (response.ok) {
+          // Reload the current page after deletion
+          await loadData(pagination.currentPage)
+        }
       } catch (error) {
         alert("Erreur lors de la suppression")
       }
@@ -155,8 +192,8 @@ export default function PayrollPage() {
 
   const getEmployeeBalances = (): EmployeeBalance[] => {
     return employees.map(emp => {
-      const empRecords = payrollRecords.filter(r => 
-        r.employee_id === emp.id && 
+      const empRecords = payrollRecords.filter(r =>
+        r.employee_id === emp.id &&
         r.month === selectedMonth
       )
       const totalAdvances = empRecords
@@ -165,7 +202,7 @@ export default function PayrollPage() {
       const totalPaid = empRecords
         .filter(r => r.payment_type === "salary")
         .reduce((sum, r) => sum + r.amount, 0)
-      
+
       return {
         employee_id: emp.id,
         employee_name: emp.name,
@@ -175,6 +212,47 @@ export default function PayrollPage() {
         balance: emp.salary - totalAdvances - totalPaid,
       }
     })
+  }
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= pagination.totalPages) {
+      loadData(page)
+    }
+  }
+
+  // Separate pagination for employee balances
+  const [employeePagination, setEmployeePagination] = useState<PaginationData>({
+    currentPage: 1,
+    totalPages: 0,
+    totalItems: 0,
+    itemsPerPage: 10,
+  });
+
+  // Update employee pagination when employees change
+  useEffect(() => {
+    const totalPages = Math.ceil(employees.length / 10);
+    setEmployeePagination(prev => ({
+      ...prev,
+      totalPages,
+      totalItems: employees.length
+    }));
+  }, [employees]);
+
+  // Paginated version for employee balances table
+  const getPaginatedEmployeeBalances = (): EmployeeBalance[] => {
+    const allBalances = getEmployeeBalances();
+    const start = (employeePagination.currentPage - 1) * employeePagination.itemsPerPage;
+    const end = start + employeePagination.itemsPerPage;
+    return allBalances.slice(start, end);
+  };
+
+  const handleEmployeePageChange = (page: number) => {
+    if (page >= 1 && page <= employeePagination.totalPages) {
+      setEmployeePagination(prev => ({
+        ...prev,
+        currentPage: page
+      }));
+    }
   }
 
   if (isLoading) {
@@ -365,7 +443,7 @@ export default function PayrollPage() {
 
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>État des Paiements par Employé</CardTitle>
+              <CardTitle>État des Paiements par Employé ({employeePagination.totalItems})</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-auto">
@@ -381,7 +459,7 @@ export default function PayrollPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {balances.map((b) => (
+                    {getPaginatedEmployeeBalances().map((b) => (
                       <TableRow key={b.employee_id}>
                         <TableCell className="font-medium">{b.employee_name}</TableCell>
                         <TableCell>{b.salary.toFixed(2)} DT</TableCell>
@@ -404,12 +482,103 @@ export default function PayrollPage() {
                   </TableBody>
                 </Table>
               </div>
+              {/* Employee pagination controls */}
+              {employeePagination.totalPages > 1 && (
+                <div className="mt-6 flex flex-col items-center gap-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEmployeePageChange(employeePagination.currentPage - 1)}
+                          disabled={employeePagination.currentPage <= 1}
+                        >
+                          <PaginationPrevious className="!m-0" />
+                        </Button>
+                      </PaginationItem>
+
+                      {/* First page */}
+                      {employeePagination.currentPage > 2 && (
+                        <>
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handleEmployeePageChange(1)}>
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                          {employeePagination.currentPage > 3 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                        </>
+                      )}
+
+                      {/* Previous page */}
+                      {employeePagination.currentPage > 1 && (
+                        <PaginationItem>
+                          <PaginationLink onClick={() => handleEmployeePageChange(employeePagination.currentPage - 1)}>
+                            {employeePagination.currentPage - 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+
+                      {/* Current page */}
+                      <PaginationItem>
+                        <PaginationLink onClick={() => handleEmployeePageChange(employeePagination.currentPage)} isActive>
+                          {employeePagination.currentPage}
+                        </PaginationLink>
+                      </PaginationItem>
+
+                      {/* Next page */}
+                      {employeePagination.currentPage < employeePagination.totalPages && (
+                        <PaginationItem>
+                          <PaginationLink onClick={() => handleEmployeePageChange(employeePagination.currentPage + 1)}>
+                            {employeePagination.currentPage + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+
+                      {/* Last page */}
+                      {employeePagination.currentPage < employeePagination.totalPages - 1 && (
+                        <>
+                          {employeePagination.currentPage < employeePagination.totalPages - 2 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handleEmployeePageChange(employeePagination.totalPages)}>
+                              {employeePagination.totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </>
+                      )}
+
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEmployeePageChange(employeePagination.currentPage + 1)}
+                          disabled={employeePagination.currentPage >= employeePagination.totalPages}
+                        >
+                          <PaginationNext className="!m-0" />
+                        </Button>
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                  <div className="text-sm text-muted-foreground">
+                    Page {employeePagination.currentPage} sur {employeePagination.totalPages} •
+                    Total {employeePagination.totalItems} employés
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Historique des Transactions</CardTitle>
+              <CardTitle>Historique des Transactions ({pagination.totalItems})</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-auto">
@@ -426,14 +595,14 @@ export default function PayrollPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payrollRecords.filter(r => r.month === selectedMonth).map((r) => (
+                    {payrollRecords.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell>{formatDisplayDate(r.payment_date)}</TableCell>
                         <TableCell>{r.employee_name}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded text-xs ${
-                            r.payment_type === "salary" 
-                              ? "bg-green-100 text-green-800" 
+                            r.payment_type === "salary"
+                              ? "bg-green-100 text-green-800"
                               : "bg-orange-100 text-orange-800"
                           }`}>
                             {r.payment_type === "salary" ? "Salaire" : "Avance"}
@@ -462,6 +631,97 @@ export default function PayrollPage() {
                   </TableBody>
                 </Table>
               </div>
+              {/* Pagination controls */}
+              {pagination.totalPages > 1 && (
+                <div className="mt-6 flex flex-col items-center gap-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(pagination.currentPage - 1)}
+                          disabled={pagination.currentPage <= 1}
+                        >
+                          <PaginationPrevious className="!m-0" />
+                        </Button>
+                      </PaginationItem>
+
+                      {/* First page */}
+                      {pagination.currentPage > 2 && (
+                        <>
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handlePageChange(1)}>
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                          {pagination.currentPage > 3 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                        </>
+                      )}
+
+                      {/* Previous page */}
+                      {pagination.currentPage > 1 && (
+                        <PaginationItem>
+                          <PaginationLink onClick={() => handlePageChange(pagination.currentPage - 1)}>
+                            {pagination.currentPage - 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+
+                      {/* Current page */}
+                      <PaginationItem>
+                        <PaginationLink onClick={() => handlePageChange(pagination.currentPage)} isActive>
+                          {pagination.currentPage}
+                        </PaginationLink>
+                      </PaginationItem>
+
+                      {/* Next page */}
+                      {pagination.currentPage < pagination.totalPages && (
+                        <PaginationItem>
+                          <PaginationLink onClick={() => handlePageChange(pagination.currentPage + 1)}>
+                            {pagination.currentPage + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+
+                      {/* Last page */}
+                      {pagination.currentPage < pagination.totalPages - 1 && (
+                        <>
+                          {pagination.currentPage < pagination.totalPages - 2 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                          <PaginationItem>
+                            <PaginationLink onClick={() => handlePageChange(pagination.totalPages)}>
+                              {pagination.totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </>
+                      )}
+
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(pagination.currentPage + 1)}
+                          disabled={pagination.currentPage >= pagination.totalPages}
+                        >
+                          <PaginationNext className="!m-0" />
+                        </Button>
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                  <div className="text-sm text-muted-foreground">
+                    Page {pagination.currentPage} sur {pagination.totalPages} •
+                    Total {pagination.totalItems} transactions
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
