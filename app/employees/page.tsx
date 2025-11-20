@@ -17,6 +17,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Trash2, Edit2, Search } from "lucide-react"
+import { formatDisplayDate } from "@/lib/date-utils"
 
 interface Employee {
   id: number
@@ -299,7 +300,7 @@ export default function EmployeesPage() {
                           <TableCell className="font-medium">{employee.name}</TableCell>
                           <TableCell>{employee.position}</TableCell>
                           <TableCell>{employee.salary.toFixed(2)} DT</TableCell>
-                          <TableCell>{employee.hire_date}</TableCell>
+                          <TableCell>{formatDisplayDate(employee.hire_date)}</TableCell>
                           <TableCell>{employee.vacation_balance} j</TableCell>
                           <TableCell className="text-right">
                             <div className="flex gap-2 justify-end">

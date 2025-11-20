@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { formatDisplayDate } from "@/lib/date-utils"
 
 interface Tank {
   id: number
@@ -443,7 +444,7 @@ export default function TanksPage() {
                     <TableBody>
                       {movements.map((m) => (
                         <TableRow key={m.id}>
-                          <TableCell>{m.movement_date}</TableCell>
+                          <TableCell>{formatDisplayDate(m.movement_date)}</TableCell>
                           <TableCell>{m.tank_code}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">

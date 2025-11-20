@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Droplets, Eye, EyeOff, Users, Truck, Droplet, ShoppingCart, AlertCircle, Download } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Navigation from "@/components/navigation"
+import { formatDisplayDate } from "@/lib/date-utils"
 
 interface DashboardStats {
   totalEmployees: number

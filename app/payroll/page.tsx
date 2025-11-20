@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, Edit2, DollarSign, TrendingUp } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
+import { formatDisplayDate } from "@/lib/date-utils"
 
 interface Employee {
   id: number
@@ -427,7 +428,7 @@ export default function PayrollPage() {
                   <TableBody>
                     {payrollRecords.filter(r => r.month === selectedMonth).map((r) => (
                       <TableRow key={r.id}>
-                        <TableCell>{r.payment_date}</TableCell>
+                        <TableCell>{formatDisplayDate(r.payment_date)}</TableCell>
                         <TableCell>{r.employee_name}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded text-xs ${

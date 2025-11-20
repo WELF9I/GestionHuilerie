@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Download, Upload, Trash2, AlertTriangle } from "lucide-react"
+import { formatDisplayDate } from "@/lib/date-utils"
 
 export default function SettingsPage() {
   const router = useRouter()

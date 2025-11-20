@@ -18,6 +18,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Trash2, Edit, Leaf, TrendingUp } from "lucide-react"
+import { formatDisplayDate } from "@/lib/date-utils"
 
 interface Pomace {
   id: number
@@ -324,7 +325,7 @@ export default function PomacePage() {
                     <TableBody>
                       {pomaceList.map((pomace) => (
                         <TableRow key={pomace.id}>
-                          <TableCell>{pomace.collection_date}</TableCell>
+                          <TableCell>{formatDisplayDate(pomace.collection_date)}</TableCell>
                           <TableCell className="font-medium">{pomace.quantity_kg.toFixed(2)}</TableCell>
                           <TableCell>
                             <span

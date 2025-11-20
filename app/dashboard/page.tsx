@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Navigation from "@/components/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatDisplayDate } from "@/lib/date-utils"
 
 export default function DashboardPage() {
   const router = useRouter()

@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, Edit2, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { formatDisplayDate } from "@/lib/date-utils"
 
 interface Supplier {
   id: number
@@ -453,7 +454,7 @@ export default function PurchasesPage() {
                     <TableBody>
                       {purchases.map((p) => (
                         <TableRow key={p.id}>
-                          <TableCell>{p.purchase_date}</TableCell>
+                          <TableCell>{formatDisplayDate(p.purchase_date)}</TableCell>
                           <TableCell>{p.supplier_name}</TableCell>
                           <TableCell>{p.quantity_kg}</TableCell>
                           <TableCell>{p.unit_price}</TableCell>

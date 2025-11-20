@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, Edit } from "lucide-react"
+import { formatDisplayDate } from "@/lib/date-utils"
 
 interface Purchase {
   id: number
@@ -270,7 +271,7 @@ export default function PressingPage() {
                     <TableBody>
                       {operations.map((o) => (
                         <TableRow key={o.id}>
-                          <TableCell>{o.operation_date}</TableCell>
+                          <TableCell>{formatDisplayDate(o.operation_date)}</TableCell>
                           <TableCell>{o.olives_quantity_kg}</TableCell>
                           <TableCell>{o.total_price}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{o.notes || '-'}</TableCell>

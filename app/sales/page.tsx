@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, TrendingUp } from "lucide-react"
+import { formatDisplayDate } from "@/lib/date-utils"
 
 interface Tank {
   id: number
@@ -319,7 +320,7 @@ export default function SalesPage() {
                     <TableBody>
                       {filteredSales.map((s) => (
                         <TableRow key={s.id}>
-                          <TableCell>{s.sale_date}</TableCell>
+                          <TableCell>{formatDisplayDate(s.sale_date)}</TableCell>
                           <TableCell className="font-semibold">{s.customer_name}</TableCell>
                           <TableCell>{s.quantity_liters}</TableCell>
                           <TableCell>{s.unit_price}</TableCell>

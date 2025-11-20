@@ -17,6 +17,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Trash2, Edit2, Search } from "lucide-react"
+import { formatDisplayDate } from "@/lib/date-utils"
 
 interface Supplier {
   id: number
@@ -154,6 +155,7 @@ export default function SuppliersPage() {
       alert("Erreur lors du chargement de l'historique")
     }
   }
+
 
   if (isLoading) {
     return (
@@ -308,13 +310,13 @@ export default function SuppliersPage() {
 
       {/* Purchase History Popup */}
       <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-5xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>
               Historique des Achats - {selectedSupplier?.name}
             </DialogTitle>
           </DialogHeader>
-          <div className="mt-4">
+          <div className="mt-4 flex-1 overflow-auto">
             {supplierHistory.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
                 Aucun historique d'achat pour ce fournisseur
@@ -324,25 +326,23 @@ export default function SuppliersPage() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 px-4">Date</th>
-                      <th className="text-left py-2 px-4">Lot</th>
-                      <th className="text-left py-2 px-4">Quantité (Kg)</th>
-                      <th className="text-left py-2 px-4">Prix Unitaire (TND)</th>
-                      <th className="text-left py-2 px-4">Total (TND)</th>
-                      <th className="text-left py-2 px-4">Avance (TND)</th>
-                      <th className="text-left py-2 px-4">Solde (TND)</th>
+                      <th className="text-left py-2 px-3 text-sm">Date</th>
+                      <th className="text-left py-2 px-3 text-sm">Quantité (Kg)</th>
+                      <th className="text-left py-2 px-3 text-sm">Prix Unitaire (TND)</th>
+                      <th className="text-left py-2 px-3 text-sm">Total (TND)</th>
+                      <th className="text-left py-2 px-3 text-sm">Avance (TND)</th>
+                      <th className="text-left py-2 px-3 text-sm">Rest à payer (TND)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {supplierHistory.map((purchase) => (
                       <tr key={purchase.id} className="border-b hover:bg-muted/50">
-                        <td className="py-2 px-4">{purchase.purchase_date}</td>
-                        <td className="py-2 px-4 font-medium">{purchase.batch_number}</td>
-                        <td className="py-2 px-4">{purchase.quantity_kg}</td>
-                        <td className="py-2 px-4">{purchase.unit_price}</td>
-                        <td className="py-2 px-4 font-bold text-green-600">{purchase.total_amount.toFixed(2)}</td>
-                        <td className="py-2 px-4">{purchase.advance_paid}</td>
-                        <td className="py-2 px-4">{purchase.remaining_balance}</td>
+                        <td className="py-2 px-3 text-sm">{formatDisplayDate(purchase.purchase_date)}</td>
+                        <td className="py-2 px-3 text-sm">{purchase.quantity_kg}</td>
+                        <td className="py-2 px-3 text-sm">{purchase.unit_price}</td>
+                        <td className="py-2 px-3 text-sm font-bold text-green-600">{purchase.total_amount.toFixed(2)}</td>
+                        <td className="py-2 px-3 text-sm">{purchase.advance_paid}</td>
+                        <td className="py-2 px-3 text-sm">{purchase.remaining_balance}</td>
                       </tr>
                     ))}
                   </tbody>
