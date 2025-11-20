@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, Edit2, AlertCircle } from "lucide-react"
+import { Plus, Trash2, Edit2, AlertCircle, ShoppingCart, CreditCard, DollarSign } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { formatDisplayDate } from "@/lib/date-utils"
 
@@ -404,7 +404,10 @@ export default function PurchasesPage() {
           <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Total Acheté</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  Total Acheté
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalPurchased.toFixed(2)} DT</div>
@@ -412,7 +415,10 @@ export default function PurchasesPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Total Avances</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Total Avances
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalAdvance.toFixed(2)} DT</div>
@@ -420,7 +426,10 @@ export default function PurchasesPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Solde Restant</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Rest à payer
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{(totalPurchased - totalAdvance).toFixed(2)} DT</div>
@@ -446,7 +455,7 @@ export default function PurchasesPage() {
                         <TableHead>P.U (TND)</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead>Avance</TableHead>
-                        <TableHead>Solde</TableHead>
+                        <TableHead>Rest à payer</TableHead>
                         <TableHead>Lot</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>

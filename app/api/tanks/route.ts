@@ -23,6 +23,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "tank_code et capacity_liters sont requis" }, { status: 400 })
     }
 
+    // Check if tank_code already exists
+    const existingTank = db.prepare("SELECT id FROM tanks WHERE tank_code = ?").get(tank_code)
+    if (existingTank) {
+      return NextResponse.json({ error: "Un citerne avec ce code existe déjà" }, { status: 400 })
+    }
+
     const result = db
       .prepare(`
       INSERT INTO tanks (tank_code, capacity_liters, oil_type, current_volume, is_active)
