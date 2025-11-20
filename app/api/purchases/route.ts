@@ -6,31 +6,49 @@ export async function GET(request: NextRequest) {
     initializeDatabase()
     const db = getDatabase()
 
-    // Extract query parameters for pagination
+    // Extract query parameters for pagination and filtering
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
+    const supplierId = searchParams.get("supplier_id") || null
 
     // Calculate offset
     const offset = (page - 1) * limit
 
+    // Build the WHERE clause for supplier filter if provided
+    let whereClause = ""
+    let countParams: any[] = []
+    let dataParams: any[] = []
+
+    if (supplierId) {
+      whereClause = "WHERE p.supplier_id = ?"
+      countParams = [supplierId]
+      dataParams = [supplierId, limit, offset]
+    } else {
+      dataParams = [limit, offset]
+    }
+
     // First, get total count for pagination metadata
     const totalCountResult = db.prepare(`
-      SELECT COUNT(*) as count FROM olive_purchases p
+      SELECT COUNT(*) as count
+      FROM olive_purchases p
       LEFT JOIN suppliers s ON p.supplier_id = s.id
-    `).get() as { count: number }
+      ${whereClause}
+    `).get(countParams) as { count: number }
 
     const totalCount = totalCountResult.count
 
     // Get paginated results
-    const purchases = db
-      .prepare(`
-      SELECT p.*, s.name as supplier_name FROM olive_purchases p
+    let query = `
+      SELECT p.*, s.name as supplier_name
+      FROM olive_purchases p
       LEFT JOIN suppliers s ON p.supplier_id = s.id
+      ${whereClause}
       ORDER BY p.id DESC
       LIMIT ? OFFSET ?
-    `)
-      .all(limit, offset)
+    `
+
+    const purchases = db.prepare(query).all(dataParams)
 
     // Calculate total pages
     const totalPages = Math.ceil(totalCount / limit)

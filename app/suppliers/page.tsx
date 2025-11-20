@@ -142,13 +142,27 @@ export default function SuppliersPage() {
 
   const loadSupplierHistory = async (supplierId: number, supplier: Supplier) => {
     try {
-      const response = await fetch(`/api/purchases`)
+      // Fetch purchases for this supplier only (using the new supplier_id filter)
+      const response = await fetch(`/api/purchases?supplier_id=${supplierId}`)
       if (response.ok) {
-        const allPurchases = await response.json()
-        const supplierPurchases = allPurchases.filter((purchase: any) => purchase.supplier_id === supplierId)
-        setSupplierHistory(supplierPurchases)
+        const result = await response.json()
+        if (result.data && Array.isArray(result.data)) {
+          // Use the paginated data
+          setSupplierHistory(result.data)
+        } else {
+          // Fallback for older API responses (in case of direct array return)
+          const purchases = await response.json()
+          if (Array.isArray(purchases)) {
+            setSupplierHistory(purchases)
+          } else {
+            setSupplierHistory([])
+          }
+        }
         setSelectedSupplier(supplier)
         setIsHistoryOpen(true)
+      } else {
+        setSupplierHistory([])
+        alert("Erreur lors du chargement de l'historique")
       }
     } catch (error) {
       console.error("Erreur:", error)
