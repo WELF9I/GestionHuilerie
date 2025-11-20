@@ -1,187 +1,143 @@
--- Huilerie Management System - SQLite Database Schema
--- Full system for olive oil mill operations
+-- Huilerie Management System - Updated SQLite Database Schema
+-- Current system for olive oil mill operations
+-- Generated based on lib/db.ts schema
 
--- 1. EMPLOYEES MODULE
+-- 1. EMPLOYEES TABLE
 CREATE TABLE IF NOT EXISTS employees (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  firstName TEXT NOT NULL,
-  lastName TEXT NOT NULL,
-  email TEXT UNIQUE,
-  phone TEXT,
-  role TEXT NOT NULL,
-  salary REAL,
-  hireDate DATE NOT NULL,
-  status TEXT CHECK(status IN ('actif', 'inactif')) DEFAULT 'actif',
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  name TEXT NOT NULL,
+  position TEXT NOT NULL,
+  salary REAL DEFAULT 0,
+  hire_date DATE,
+  vacation_balance REAL DEFAULT 0,
+  notes TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. SUPPLIERS MODULE
+-- 2. SUPPLIERS TABLE
 CREATE TABLE IF NOT EXISTS suppliers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  contactPerson TEXT,
-  email TEXT,
+  name TEXT NOT NULL,
   phone TEXT,
   address TEXT,
-  city TEXT,
-  postalCode TEXT,
-  type TEXT CHECK(type IN ('producteur_olives', 'fournisseur', 'prestataire')) DEFAULT 'producteur_olives',
-  status TEXT CHECK(status IN ('actif', 'inactif')) DEFAULT 'actif',
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  notes TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. OLIVE PURCHASES MODULE
+-- 3. OLIVE PURCHASES TABLE
 CREATE TABLE IF NOT EXISTS olive_purchases (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  supplierId INTEGER NOT NULL,
-  purchaseDate DATE NOT NULL,
-  quantityKg REAL NOT NULL,
-  pricePerKg REAL NOT NULL,
-  totalPrice REAL NOT NULL,
-  quality TEXT CHECK(quality IN ('extra', 'premiere', 'second')),
+  purchase_date DATE NOT NULL,
+  supplier_id INTEGER NOT NULL,
+  quantity_kg REAL NOT NULL,
+  unit_price REAL NOT NULL,
+  total_amount REAL NOT NULL,
+  advance_paid REAL DEFAULT 0,
+  remaining_balance REAL DEFAULT 0,
+  batch_number TEXT UNIQUE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+);
+
+-- 4. PRESSING OPERATIONS TABLE
+CREATE TABLE IF NOT EXISTS pressing_operations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  operation_date DATE NOT NULL,
+  olives_quantity_kg REAL NOT NULL,
+  total_price REAL,
   notes TEXT,
-  status TEXT CHECK(status IN ('en_attente', 'recu', 'refuse')) DEFAULT 'en_attente',
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(supplierId) REFERENCES suppliers(id)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. OIL PRESSING MODULE
-CREATE TABLE IF NOT EXISTS pressing_sessions (
+-- 5. TANKS TABLE
+CREATE TABLE IF NOT EXISTS tanks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  purchaseId INTEGER,
-  pressDate DATE NOT NULL,
-  oliveQuantityKg REAL NOT NULL,
-  oilProducedLiters REAL NOT NULL,
-  extractionRate REAL,
-  temperature REAL,
-  pressType TEXT CHECK(pressType IN ('premiere', 'deuxieme', 'mixte')),
-  operatorId INTEGER,
+  tank_code TEXT UNIQUE NOT NULL,
+  capacity_liters REAL NOT NULL,
+  current_volume REAL DEFAULT 0,
+  oil_type TEXT,
+  is_active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 6. TANK MOVEMENTS TABLE
+CREATE TABLE IF NOT EXISTS tank_movements (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  movement_date DATE NOT NULL,
+  movement_type TEXT NOT NULL,
+  tank_id INTEGER,
+  target_tank_id INTEGER,
+  quantity_liters REAL NOT NULL,
+  reference TEXT,
   notes TEXT,
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(purchaseId) REFERENCES olive_purchases(id),
-  FOREIGN KEY(operatorId) REFERENCES employees(id)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (tank_id) REFERENCES tanks(id),
+  FOREIGN KEY (target_tank_id) REFERENCES tanks(id)
 );
 
--- 5. TANK STORAGE MODULE
-CREATE TABLE IF NOT EXISTS storage_tanks (
+-- 7. OIL SALES TABLE
+CREATE TABLE IF NOT EXISTS oil_sales (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  capacity REAL NOT NULL,
-  location TEXT,
-  material TEXT,
-  temperature REAL,
-  status TEXT CHECK(status IN ('vide', 'partiel', 'plein')) DEFAULT 'vide',
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS tank_storage (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  tankId INTEGER NOT NULL,
-  pressingSessionId INTEGER,
-  storageDate DATE NOT NULL,
-  quantityLiters REAL NOT NULL,
-  harvestYear INTEGER,
-  qualityGrade TEXT CHECK(qualityGrade IN ('extra', 'premiere', 'lampante')),
+  sale_date DATE NOT NULL,
+  customer_name TEXT NOT NULL,
+  quantity_liters REAL NOT NULL,
+  unit_price REAL NOT NULL,
+  total_amount REAL NOT NULL,
+  tank_id INTEGER,
   notes TEXT,
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(tankId) REFERENCES storage_tanks(id),
-  FOREIGN KEY(pressingSessionId) REFERENCES pressing_sessions(id)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (tank_id) REFERENCES tanks(id)
 );
 
--- 6. SALES MODULE
-CREATE TABLE IF NOT EXISTS customers (
+-- 8. POMACE TABLE
+CREATE TABLE IF NOT EXISTS pomace (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  contactPerson TEXT,
-  email TEXT,
-  phone TEXT,
-  address TEXT,
-  city TEXT,
-  postalCode TEXT,
-  type TEXT CHECK(type IN ('entreprise', 'particulier', 'grossiste')) DEFAULT 'particulier',
-  status TEXT CHECK(status IN ('actif', 'inactif')) DEFAULT 'actif',
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS sales (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  customerId INTEGER NOT NULL,
-  saleDate DATE NOT NULL,
-  quantityLiters REAL NOT NULL,
-  pricePerLiter REAL NOT NULL,
-  totalPrice REAL NOT NULL,
-  qualityGrade TEXT CHECK(qualityGrade IN ('extra', 'premiere', 'lampante')),
-  paymentStatus TEXT CHECK(paymentStatus IN ('en_attente', 'partiel', 'paye')) DEFAULT 'en_attente',
-  paymentMethod TEXT CHECK(paymentMethod IN ('cheque', 'virement', 'especes', 'carte')),
+  collection_date DATE NOT NULL,
+  quantity_kg REAL NOT NULL,
+  status TEXT DEFAULT 'stocké',
+  customer_buyer TEXT,
+  sale_price REAL,
   notes TEXT,
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(customerId) REFERENCES customers(id)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. AUDIT LOG MODULE
-CREATE TABLE IF NOT EXISTS pomace_stock (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  pressingSessionId INTEGER,
-  quantityKg REAL NOT NULL,
-  storageDate DATE NOT NULL,
-  moistureContent REAL,
-  quality TEXT CHECK(quality IN ('humide', 'sechee')),
-  status TEXT CHECK(status IN ('stock', 'vendu')) DEFAULT 'stock',
-  notes TEXT,
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(pressingSessionId) REFERENCES pressing_sessions(id)
-);
-
-CREATE TABLE IF NOT EXISTS pomace_sales (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  pomaceId INTEGER NOT NULL,
-  buyerId INTEGER,
-  saleDate DATE NOT NULL,
-  quantityKg REAL NOT NULL,
-  pricePerKg REAL NOT NULL,
-  totalPrice REAL NOT NULL,
-  paymentStatus TEXT CHECK(paymentStatus IN ('en_attente', 'partiel', 'paye')) DEFAULT 'en_attente',
-  notes TEXT,
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(pomaceId) REFERENCES pomace_stock(id),
-  FOREIGN KEY(buyerId) REFERENCES suppliers(id)
-);
-
--- 8. SYSTEM SETTINGS
-CREATE TABLE IF NOT EXISTS audit_logs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  action TEXT NOT NULL,
-  tableName TEXT NOT NULL,
-  recordId INTEGER,
-  oldValue TEXT,
-  newValue TEXT,
-  userId INTEGER,
-  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(userId) REFERENCES employees(id)
-);
-
--- 10. SYSTEM SETTINGS
+-- 9. SETTINGS TABLE
 CREATE TABLE IF NOT EXISTS settings (
-  key TEXT PRIMARY KEY,
-  value TEXT,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  setting_key TEXT UNIQUE NOT NULL,
+  setting_value TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. PAYROLL TABLE
+CREATE TABLE IF NOT EXISTS payroll (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  employee_id INTEGER NOT NULL,
+  payment_date DATE NOT NULL,
+  payment_type TEXT NOT NULL CHECK(payment_type IN ('salary', 'advance')),
+  amount REAL NOT NULL,
+  month TEXT,
+  notes TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE CASCADE
 );
 
 -- Create indices for performance
-CREATE INDEX IF NOT EXISTS idx_supplier_status ON suppliers(status);
-CREATE INDEX IF NOT EXISTS idx_purchase_date ON olive_purchases(purchaseDate);
-CREATE INDEX IF NOT EXISTS idx_pressing_date ON pressing_sessions(pressDate);
-CREATE INDEX IF NOT EXISTS idx_tank_status ON storage_tanks(status);
-CREATE INDEX IF NOT EXISTS idx_sale_date ON sales(saleDate);
-CREATE INDEX IF NOT EXISTS idx_customer_status ON customers(status);
-CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
+CREATE INDEX IF NOT EXISTS idx_employees_position ON employees(position);
+CREATE INDEX IF NOT EXISTS idx_olive_purchases_date ON olive_purchases(purchase_date);
+CREATE INDEX IF NOT EXISTS idx_olive_purchases_supplier ON olive_purchases(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_pressing_operations_date ON pressing_operations(operation_date);
+CREATE INDEX IF NOT EXISTS idx_tanks_status ON tanks(is_active);
+CREATE INDEX IF NOT EXISTS idx_oil_sales_date ON oil_sales(sale_date);
+CREATE INDEX IF NOT EXISTS idx_oil_sales_customer ON oil_sales(customer_name);
+CREATE INDEX IF NOT EXISTS idx_pomace_date ON pomace(collection_date);
+CREATE INDEX IF NOT EXISTS idx_payroll_date ON payroll(payment_date);
+CREATE INDEX IF NOT EXISTS idx_payroll_employee ON payroll(employee_id);
