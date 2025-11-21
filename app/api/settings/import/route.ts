@@ -37,11 +37,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Remove lingering WAL/SHM files so they don't override imported data
-    if (fs.existsSync(walPath)) {
-      fs.rmSync(walPath)
+    // Handle Windows permission issues when files are locked
+    try {
+      if (fs.existsSync(walPath)) {
+        fs.rmSync(walPath)
+      }
+    } catch (error) {
+      console.warn("Could not delete WAL file (likely still locked):", walPath, error.message)
+      // On Windows, WAL files may still be locked, which is normal
+      // We can continue with the import anyway
     }
-    if (fs.existsSync(shmPath)) {
-      fs.rmSync(shmPath)
+
+    try {
+      if (fs.existsSync(shmPath)) {
+        fs.rmSync(shmPath)
+      }
+    } catch (error) {
+      console.warn("Could not delete SHM file (likely still locked):", shmPath, error.message)
+      // On Windows, SHM files may still be locked, which is normal
+      // We can continue with the import anyway
     }
 
     // Read the uploaded file

@@ -42,9 +42,16 @@ interface PaginationData {
   itemsPerPage: number
 }
 
+interface PressingStats {
+  totalOlives: number
+  totalRevenue: number
+  operationCount: number
+}
+
 interface ApiOperationsResponse {
   data: Operation[]
   pagination: PaginationData
+  stats: PressingStats
 }
 
 export default function PressingPage() {
@@ -65,6 +72,11 @@ export default function PressingPage() {
     totalItems: 0,
     itemsPerPage: 10,
   })
+  const [stats, setStats] = useState<PressingStats>({
+    totalOlives: 0,
+    totalRevenue: 0,
+    operationCount: 0,
+  })
 
   useEffect(() => {
     const isAuth = localStorage.getItem("huilerie_auth") === "true"
@@ -82,6 +94,7 @@ export default function PressingPage() {
         const data = await response.json() as ApiOperationsResponse
         setOperations(data.data || [])
         setPagination(data.pagination)
+        setStats(data.stats) // Set the stats from the API response
       }
     } catch (error) {
       console.error("Erreur:", error)
@@ -190,7 +203,6 @@ export default function PressingPage() {
     )
   }
 
-  const totalRevenue = operations.reduce((sum, o) => sum + (o.total_price || 0), 0)
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -265,7 +277,7 @@ export default function PressingPage() {
                 <CardTitle className="text-sm">Total Olives (kg)</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{operations.reduce((sum, o) => sum + o.olives_quantity_kg, 0).toFixed(2)} Kg</div>
+                <div className="text-3xl font-bold">{stats.totalOlives.toFixed(2)} Kg</div>
               </CardContent>
             </Card>
             <Card>
@@ -273,7 +285,7 @@ export default function PressingPage() {
                 <CardTitle className="text-sm">Revenu Total</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{totalRevenue.toFixed(2)} DT</div>
+                <div className="text-3xl font-bold">{stats.totalRevenue.toFixed(2)} DT</div>
               </CardContent>
             </Card>
             <Card>
@@ -281,7 +293,7 @@ export default function PressingPage() {
                 <CardTitle className="text-sm">Opérations</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{operations.length}</div>
+                <div className="text-3xl font-bold">{stats.operationCount}</div>
               </CardContent>
             </Card>
           </div>

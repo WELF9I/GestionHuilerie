@@ -50,9 +50,16 @@ interface PaginationData {
   itemsPerPage: number
 }
 
+interface SaleStats {
+  totalRevenue: number
+  totalQuantity: number
+  avgPrice: number
+}
+
 interface ApiSalesResponse {
   data: Sale[]
   pagination: PaginationData
+  stats: SaleStats
 }
 
 export default function SalesPage() {
@@ -76,6 +83,11 @@ export default function SalesPage() {
     totalPages: 0,
     totalItems: 0,
     itemsPerPage: 10,
+  })
+  const [stats, setStats] = useState<SaleStats>({
+    totalRevenue: 0,
+    totalQuantity: 0,
+    avgPrice: 0,
   })
 
   // Debounce hook
@@ -123,6 +135,7 @@ export default function SalesPage() {
         const response = await salesRes.json() as ApiSalesResponse
         setSales(response.data)
         setPagination(response.pagination)
+        setStats(response.stats) // Set the stats from the API response
       }
 
       if (tanksRes.ok) setTanks(await tanksRes.json())
@@ -205,9 +218,6 @@ export default function SalesPage() {
     )
   }
 
-  const totalRevenue = sales.reduce((sum, s) => sum + s.total_amount, 0)
-  const totalQuantity = sales.reduce((sum, s) => sum + s.quantity_liters, 0)
-  const avgPrice = sales.length > 0 ? (totalRevenue / totalQuantity).toFixed(2) : "0"
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -318,7 +328,7 @@ export default function SalesPage() {
               <CardContent>
                 <div className="flex items-baseline gap-2">
                   <TrendingUp className="h-5 w-5 text-green-600" />
-                  <div className="text-3xl font-bold">{totalRevenue.toFixed(2)} DT</div>
+                  <div className="text-3xl font-bold">{stats.totalRevenue.toFixed(2)} DT</div>
                 </div>
               </CardContent>
             </Card>
@@ -327,7 +337,7 @@ export default function SalesPage() {
                 <CardTitle className="text-sm">Quantité Vendue</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{totalQuantity.toFixed(2)} Kg</div>
+                <div className="text-3xl font-bold">{stats.totalQuantity.toFixed(2)} Kg</div>
               </CardContent>
             </Card>
             <Card>
@@ -335,7 +345,7 @@ export default function SalesPage() {
                 <CardTitle className="text-sm">Prix Moyen</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{avgPrice} DT/Kg</div>
+                <div className="text-3xl font-bold">{stats.avgPrice.toFixed(2)} DT/Kg</div>
               </CardContent>
             </Card>
           </div>

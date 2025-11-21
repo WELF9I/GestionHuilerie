@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
     const supplierId = searchParams.get("supplier_id") || null
+    const supplierName = searchParams.get("supplier_name") || null
 
     // Calculate offset
     const offset = (page - 1) * limit
@@ -19,16 +20,42 @@ export async function GET(request: NextRequest) {
     let whereClause = ""
     let countParams: any[] = []
     let dataParams: any[] = []
+    let statsWhereClause = ""
+    let statsParams: any[] = []
 
     if (supplierId) {
-      whereClause = "WHERE p.supplier_id = ?"
+      whereClause += "WHERE p.supplier_id = ?"
       countParams = [supplierId]
       dataParams = [supplierId, limit, offset]
+      statsWhereClause += "WHERE p.supplier_id = ?"
+      statsParams = [supplierId]
+    } else if (supplierName) {
+      whereClause += "WHERE s.name LIKE ?"
+      const searchTerm = `%${supplierName}%`
+      countParams = [searchTerm]
+      dataParams = [searchTerm, limit, offset]
+      statsWhereClause += "WHERE s.name LIKE ?"
+      statsParams = [searchTerm]
     } else {
       dataParams = [limit, offset]
     }
 
-    // First, get total count for pagination metadata
+    // Get the overall stats (total amounts for all purchases matching the filter)
+    let statsQuery = `
+      SELECT
+        SUM(total_amount) as total_purchased,
+        SUM(advance_paid) as total_advance
+      FROM olive_purchases p
+      LEFT JOIN suppliers s ON p.supplier_id = s.id
+      ${statsWhereClause}
+    `
+
+    const statsResult = db.prepare(statsQuery).get(statsParams) as { total_purchased: number | null, total_advance: number | null }
+
+    const totalPurchased = statsResult.total_purchased || 0
+    const totalAdvance = statsResult.total_advance || 0
+
+    // Get total count for pagination metadata
     const totalCountResult = db.prepare(`
       SELECT COUNT(*) as count
       FROM olive_purchases p
@@ -53,7 +80,7 @@ export async function GET(request: NextRequest) {
     // Calculate total pages
     const totalPages = Math.ceil(totalCount / limit)
 
-    // Return both data and pagination metadata
+    // Return both data, pagination metadata, and overall stats
     return NextResponse.json({
       data: purchases,
       pagination: {
@@ -61,9 +88,15 @@ export async function GET(request: NextRequest) {
         totalPages,
         totalItems: totalCount,
         itemsPerPage: limit,
+      },
+      stats: {
+        totalPurchased,
+        totalAdvance,
+        totalRemaining: totalPurchased - totalAdvance,
       }
     })
   } catch (error) {
+    console.error("Error in GET /api/purchases:", error)
     return NextResponse.json({ error: "Erreur" }, { status: 500 })
   }
 }
@@ -136,9 +169,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Ensure WAL checkpoint for data consistency
+    db.pragma("wal_checkpoint(TRUNCATE)")
+
     return NextResponse.json({ id: result.lastInsertRowid, batch_number, total_amount, remaining_balance })
   } catch (error) {
     console.error("Error:", error)
     return NextResponse.json({ error: "Erreur" }, { status: 500 })
   }
 }
+

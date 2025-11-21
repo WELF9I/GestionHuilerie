@@ -61,9 +61,16 @@ interface PaginationData {
   itemsPerPage: number
 }
 
+interface PurchaseStats {
+  totalPurchased: number
+  totalAdvance: number
+  totalRemaining: number
+}
+
 interface ApiPurchasesResponse {
   data: Purchase[]
   pagination: PaginationData
+  stats: PurchaseStats
 }
 
 export default function PurchasesPage() {
@@ -88,6 +95,12 @@ export default function PurchasesPage() {
     totalItems: 0,
     itemsPerPage: 10,
   })
+  const [stats, setStats] = useState<PurchaseStats>({
+    totalPurchased: 0,
+    totalAdvance: 0,
+    totalRemaining: 0,
+  })
+  const [searchSupplierName, setSearchSupplierName] = useState("")
 
   useEffect(() => {
     const isAuth = localStorage.getItem("huilerie_auth") === "true"
@@ -95,13 +108,19 @@ export default function PurchasesPage() {
       router.push("/")
       return
     }
-    loadData()
-  }, [router])
+    loadData(1, searchSupplierName)
+  }, [router, searchSupplierName])
 
-  const loadData = async (page = 1) => {
+  const loadData = async (page = 1, searchName = "") => {
     try {
+      // Build the query parameters
+      let url = `/api/purchases?page=${page}&limit=${pagination.itemsPerPage}`
+      if (searchName) {
+        url += `&supplier_name=${encodeURIComponent(searchName)}`
+      }
+
       const [purchasesRes, suppliersRes, tanksRes] = await Promise.all([
-        fetch(`/api/purchases?page=${page}&limit=${pagination.itemsPerPage}`),
+        fetch(url),
         fetch("/api/suppliers"),
         fetch("/api/tanks"),
       ])
@@ -110,6 +129,7 @@ export default function PurchasesPage() {
         const response = await purchasesRes.json() as ApiPurchasesResponse
         setPurchases(response.data)
         setPagination(response.pagination)
+        setStats(response.stats) // Set the stats from the API response
       }
 
       if (suppliersRes.ok) setSuppliers(await suppliersRes.json())
@@ -158,7 +178,7 @@ export default function PurchasesPage() {
           body: JSON.stringify({ ...formData, tank_allocations: validAllocations }),
         })
         if (response.ok) {
-          await loadData(pagination.currentPage)
+          await loadData(pagination.currentPage, searchSupplierName)
           resetForm()
         }
       } else {
@@ -169,7 +189,7 @@ export default function PurchasesPage() {
         })
         if (response.ok) {
           // Reload the current page after adding a new purchase
-          await loadData(pagination.currentPage)
+          await loadData(pagination.currentPage, searchSupplierName)
           resetForm()
         }
       }
@@ -209,7 +229,7 @@ export default function PurchasesPage() {
         const response = await fetch(`/api/purchases/${id}`, { method: "DELETE" })
         if (response.ok) {
           // Reload the current page after deletion
-          await loadData(pagination.currentPage)
+          await loadData(pagination.currentPage, searchSupplierName)
         }
       } catch (error) {
         alert("Erreur lors de la suppression")
@@ -246,7 +266,7 @@ export default function PurchasesPage() {
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= pagination.totalPages) {
-      loadData(page)
+      loadData(page, searchSupplierName)
     }
   }
 
@@ -264,184 +284,193 @@ export default function PurchasesPage() {
     )
   }
 
-  const totalPurchased = purchases.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0)
-  const totalAdvance = purchases.reduce((sum, p) => sum + (Number(p.advance_paid) || 0), 0)
 
   return (
     <div className="flex h-screen flex-col bg-background">
       <Navigation />
       <main className="flex-1 overflow-auto">
         <div className="p-6 md:p-8">
-          <div className="mb-6 flex flex-col justify-between sm:flex-row sm:items-center gap-4">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-foreground">Achats d'Huile</h1>
               <p className="mt-2 text-muted-foreground">Enregistrement des achats auprès des fournisseurs</p>
             </div>
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nouveau Achat
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>{editingId ? "Modifier l'Achat" : "Enregistrer un Achat"}</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Date *</label>
-                      <Input
-                        type="date"
-                        value={formData.purchase_date}
-                        onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
-                      />
+            <div className="flex gap-2">
+              <div className="flex-1 max-w-sm">
+                <Input
+                  type="text"
+                  placeholder="Rechercher par nom de fournisseur..."
+                  value={searchSupplierName}
+                  onChange={(e) => setSearchSupplierName(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouveau Achat
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>{editingId ? "Modifier l'Achat" : "Enregistrer un Achat"}</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Date *</label>
+                        <Input
+                          type="date"
+                          value={formData.purchase_date}
+                          onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Fournisseur *</label>
+                        <Select
+                          value={formData.supplier_id}
+                          onValueChange={(value) => setFormData({ ...formData, supplier_id: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {suppliers.map((s) => (
+                              <SelectItem key={s.id} value={s.id.toString()}>
+                                {s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Fournisseur *</label>
-                      <Select
-                        value={formData.supplier_id}
-                        onValueChange={(value) => setFormData({ ...formData, supplier_id: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {suppliers.map((s) => (
-                            <SelectItem key={s.id} value={s.id.toString()}>
-                              {s.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Quantité (Kg) *</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={formData.quantity_kg}
+                          onChange={(e) => setFormData({ ...formData, quantity_kg: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Prix Unitaire (TND) *</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={formData.unit_price}
+                          onChange={(e) => setFormData({ ...formData, unit_price: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Quantité (Kg) *</label>
+                      <label className="text-sm font-medium">Avance Versée (TND)</label>
                       <Input
                         type="number"
                         step="0.01"
-                        value={formData.quantity_kg}
-                        onChange={(e) => setFormData({ ...formData, quantity_kg: e.target.value })}
+                        value={formData.advance_paid}
+                        onChange={(e) => setFormData({ ...formData, advance_paid: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Prix Unitaire (TND) *</label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={formData.unit_price}
-                        onChange={(e) => setFormData({ ...formData, unit_price: e.target.value })}
-                      />
-                    </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Avance Versée (TND)</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.advance_paid}
-                      onChange={(e) => setFormData({ ...formData, advance_paid: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="space-y-3 border-t pt-4">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium">Affectation aux Citernes *</label>
-                      <Button type="button" size="sm" variant="outline" onClick={addTankAllocation}>
-                        <Plus className="h-4 w-4 mr-1" />
-                        Ajouter Citerne
-                      </Button>
-                    </div>
-
-                    {tankAllocations.map((alloc, index) => {
-                      const tank = tanks.find(t => t.id === alloc.tank_id)
-                      const availableSpace = tank ? tank.capacity_liters - tank.current_volume : 0
-                      
-                      return (
-                        <div key={index} className="flex gap-2 items-start">
-                          <div className="flex-1 space-y-1">
-                            <Select
-                              value={alloc.tank_id.toString()}
-                              onValueChange={(value) => updateTankAllocation(index, 'tank_id', Number(value))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Citerne..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {getAvailableTanks(alloc.tank_id).map((t) => (
-                                  <SelectItem key={t.id} value={t.id.toString()}>
-                                    {t.tank_code} - {t.oil_type || 'Non spécifié'} (Libre: {(t.capacity_liters - t.current_volume).toFixed(0)}Kg)
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                              {tank && (
-                                <p className="text-xs text-muted-foreground">
-                                  Capacité libre: {availableSpace.toFixed(0)}Kg sur {tank.capacity_liters}Kg
-                                </p>
-                              )}
-                            </div>
-                            <div className="w-32">
-                              <Input
-                                type="number"
-                                step="0.01"
-                                placeholder="Quantité (Kg)"
-                                value={alloc.quantity}
-                                onChange={(e) => updateTankAllocation(index, 'quantity', e.target.value)}
-                              />
-                            </div>
-                            {tankAllocations.length > 1 && (
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => removeTankAllocation(index)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            )}
-                          </div>
-                        )
-                      })}
-
-                      <div className="bg-muted p-3 rounded-lg space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span>Quantité achetée:</span>
-                          <span className="font-medium">{Number(formData.quantity_kg || 0).toFixed(2)} Kg</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Total affecté:</span>
-                          <span className="font-medium">{getTotalAllocated().toFixed(2)} Kg</span>
-                        </div>
-                        <div className="flex justify-between text-sm font-bold">
-                          <span>Reste à affecter:</span>
-                          <span className={getRemainingToAllocate() === 0 ? "text-green-600" : "text-orange-600"}>
-                            {getRemainingToAllocate().toFixed(2)} Kg
-                          </span>
-                        </div>
+                    <div className="space-y-3 border-t pt-4">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Affectation aux Citernes *</label>
+                        <Button type="button" size="sm" variant="outline" onClick={addTankAllocation}>
+                          <Plus className="h-4 w-4 mr-1" />
+                          Ajouter Citerne
+                        </Button>
                       </div>
 
-                      {getRemainingToAllocate() !== 0 && (
-                        <Alert variant="destructive">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>
-                            Vous devez affecter toute la quantité achetée aux citernes.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
+                      {tankAllocations.map((alloc, index) => {
+                        const tank = tanks.find(t => t.id === alloc.tank_id)
+                        const availableSpace = tank ? tank.capacity_liters - tank.current_volume : 0
 
-                  <Button type="submit" className="w-full" disabled={getRemainingToAllocate() !== 0}>
-                    {editingId ? "Mettre à Jour" : "Enregistrer"}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
+                        return (
+                          <div key={index} className="flex gap-2 items-start">
+                            <div className="flex-1 space-y-1">
+                              <Select
+                                value={alloc.tank_id.toString()}
+                                onValueChange={(value) => updateTankAllocation(index, 'tank_id', Number(value))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Citerne..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {getAvailableTanks(alloc.tank_id).map((t) => (
+                                    <SelectItem key={t.id} value={t.id.toString()}>
+                                      {t.tank_code} - {t.oil_type || 'Non spécifié'} (Libre: {(t.capacity_liters - t.current_volume).toFixed(0)}Kg)
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                                {tank && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Capacité libre: {availableSpace.toFixed(0)}Kg sur {tank.capacity_liters}Kg
+                                  </p>
+                                )}
+                              </div>
+                              <div className="w-32">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="Quantité (Kg)"
+                                  value={alloc.quantity}
+                                  onChange={(e) => updateTankAllocation(index, 'quantity', e.target.value)}
+                                />
+                              </div>
+                              {tankAllocations.length > 1 && (
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => removeTankAllocation(index)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              )}
+                            </div>
+                          )
+                        })}
+
+                        <div className="bg-muted p-3 rounded-lg space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span>Quantité achetée:</span>
+                            <span className="font-medium">{Number(formData.quantity_kg || 0).toFixed(2)} Kg</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Total affecté:</span>
+                            <span className="font-medium">{getTotalAllocated().toFixed(2)} Kg</span>
+                          </div>
+                          <div className="flex justify-between text-sm font-bold">
+                            <span>Reste à affecter:</span>
+                            <span className={getRemainingToAllocate() === 0 ? "text-green-600" : "text-orange-600"}>
+                              {getRemainingToAllocate().toFixed(2)} Kg
+                            </span>
+                          </div>
+                        </div>
+
+                        {getRemainingToAllocate() !== 0 && (
+                          <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              Vous devez affecter toute la quantité achetée aux citernes.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
+
+                    <Button type="submit" className="w-full" disabled={getRemainingToAllocate() !== 0}>
+                      {editingId ? "Mettre à Jour" : "Enregistrer"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -453,7 +482,7 @@ export default function PurchasesPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalPurchased.toFixed(2)} DT</div>
+                <div className="text-2xl font-bold">{stats.totalPurchased.toFixed(2)} DT</div>
               </CardContent>
             </Card>
             <Card>
@@ -464,7 +493,7 @@ export default function PurchasesPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalAdvance.toFixed(2)} DT</div>
+                <div className="text-2xl font-bold">{stats.totalAdvance.toFixed(2)} DT</div>
               </CardContent>
             </Card>
             <Card>
@@ -475,7 +504,7 @@ export default function PurchasesPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{(totalPurchased - totalAdvance).toFixed(2)} DT</div>
+                <div className="text-2xl font-bold">{stats.totalRemaining.toFixed(2)} DT</div>
               </CardContent>
             </Card>
           </div>

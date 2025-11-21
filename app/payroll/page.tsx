@@ -48,9 +48,16 @@ interface PaginationData {
   itemsPerPage: number
 }
 
+interface PayrollStats {
+  totalSalary: number
+  totalAdvances: number
+  totalPaid: number
+}
+
 interface ApiPayrollResponse {
   data: PayrollRecord[]
   pagination: PaginationData
+  stats: PayrollStats
 }
 
 interface EmployeeBalance {
@@ -84,6 +91,11 @@ export default function PayrollPage() {
     totalItems: 0,
     itemsPerPage: 10,
   })
+  const [stats, setStats] = useState<PayrollStats>({
+    totalSalary: 0,
+    totalAdvances: 0,
+    totalPaid: 0,
+  })
 
   useEffect(() => {
     const isAuth = localStorage.getItem("huilerie_auth") === "true"
@@ -105,6 +117,7 @@ export default function PayrollPage() {
         const response = await payrollRes.json() as ApiPayrollResponse
         setPayrollRecords(response.data)
         setPagination(response.pagination)
+        setStats(response.stats) // Set the stats from the API response
       }
 
       if (employeesRes.ok) setEmployees(await employeesRes.json())
@@ -270,9 +283,6 @@ export default function PayrollPage() {
   }
 
   const balances = getEmployeeBalances()
-  const totalSalaries = balances.reduce((sum, b) => sum + b.salary, 0)
-  const totalAdvances = balances.reduce((sum, b) => sum + b.totalAdvances, 0)
-  const totalPaid = balances.reduce((sum, b) => sum + b.totalPaid, 0)
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -411,7 +421,7 @@ export default function PayrollPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalSalaries.toFixed(2)} DT</div>
+                <div className="text-2xl font-bold">{stats.totalSalary.toFixed(2)} DT</div>
                 <p className="text-xs text-muted-foreground mt-1">Mois: {selectedMonth}</p>
               </CardContent>
             </Card>
@@ -423,7 +433,7 @@ export default function PayrollPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{totalAdvances.toFixed(2)} DT</div>
+                <div className="text-2xl font-bold text-orange-600">{stats.totalAdvances.toFixed(2)} DT</div>
                 <p className="text-xs text-muted-foreground mt-1">Mois: {selectedMonth}</p>
               </CardContent>
             </Card>
@@ -435,7 +445,7 @@ export default function PayrollPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{totalPaid.toFixed(2)} DT</div>
+                <div className="text-2xl font-bold text-green-600">{stats.totalPaid.toFixed(2)} DT</div>
                 <p className="text-xs text-muted-foreground mt-1">Mois: {selectedMonth}</p>
               </CardContent>
             </Card>

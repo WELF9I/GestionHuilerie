@@ -19,14 +19,30 @@ export async function GET(request: NextRequest) {
     let whereClause = ""
     let countParams: any[] = []
     let dataParams: any[] = []
+    let statsWhereClause = ""
+    let statsParams: any[] = []
 
     if (month) {
       whereClause = "WHERE p.month = ?"
       countParams = [month]
       dataParams = [month, limit, offset]
+      statsWhereClause = "WHERE p.month = ?"
+      statsParams = [month]
     } else {
       dataParams = [limit, offset]
     }
+
+    // Get overall stats for all payroll records matching filter
+    const statsResult = db.prepare(`
+      SELECT
+        SUM(CASE WHEN payment_type = 'salary' THEN amount ELSE 0 END) as total_salary,
+        SUM(CASE WHEN payment_type = 'advance' THEN amount ELSE 0 END) as total_advances
+      FROM payroll p
+      ${statsWhereClause}
+    `).get(statsParams) as { total_salary: number | null, total_advances: number | null }
+
+    const totalSalary = statsResult.total_salary || 0
+    const totalAdvances = statsResult.total_advances || 0
 
     // First, get total count for pagination metadata
     const totalCountResult = db.prepare(`
@@ -53,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Calculate total pages
     const totalPages = Math.ceil(totalCount / limit)
 
-    // Return both data and pagination metadata
+    // Return both data, pagination metadata, and overall stats
     return NextResponse.json({
       data: payroll,
       pagination: {
@@ -61,6 +77,11 @@ export async function GET(request: NextRequest) {
         totalPages,
         totalItems: totalCount,
         itemsPerPage: limit,
+      },
+      stats: {
+        totalSalary,
+        totalAdvances,
+        totalPaid: totalSalary, // Total salary payments made
       }
     })
   } catch (error) {

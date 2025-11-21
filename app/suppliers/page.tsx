@@ -65,8 +65,8 @@ export default function SuppliersPage() {
   useEffect(() => {
     const filtered = suppliers.filter(
       (sup) =>
-        sup.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sup.phone.toLowerCase().includes(searchTerm.toLowerCase()),
+        (sup.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (sup.phone || "").toLowerCase().includes(searchTerm.toLowerCase()),
     )
     setFilteredSuppliers(filtered)
   }, [suppliers, searchTerm])

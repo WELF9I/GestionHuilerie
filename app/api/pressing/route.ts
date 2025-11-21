@@ -14,6 +14,17 @@ export async function GET(request: NextRequest) {
     // Calculate offset
     const offset = (page - 1) * limit
 
+    // Get total stats for all operations
+    const statsResult = db.prepare(`
+      SELECT
+        SUM(olives_quantity_kg) as total_olives,
+        SUM(total_price) as total_revenue
+      FROM pressing_operations
+    `).get() as { total_olives: number | null, total_revenue: number | null }
+
+    const totalOlives = statsResult.total_olives || 0
+    const totalRevenue = statsResult.total_revenue || 0
+
     // First, get total count for pagination metadata
     const totalCountResult = db.prepare("SELECT COUNT(*) as count FROM pressing_operations").get() as { count: number }
 
@@ -31,7 +42,7 @@ export async function GET(request: NextRequest) {
     // Calculate total pages
     const totalPages = Math.ceil(totalCount / limit)
 
-    // Return both data and pagination metadata
+    // Return both data, pagination metadata, and overall stats
     return NextResponse.json({
       data: operations,
       pagination: {
@@ -39,6 +50,11 @@ export async function GET(request: NextRequest) {
         totalPages,
         totalItems: totalCount,
         itemsPerPage: limit,
+      },
+      stats: {
+        totalOlives,
+        totalRevenue,
+        operationCount: totalCount,
       }
     })
   } catch (error) {
