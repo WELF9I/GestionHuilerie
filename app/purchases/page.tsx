@@ -217,7 +217,7 @@ export default function PurchasesPage() {
     setIsOpen(false)
   }
 
-  const handleEdit = (purchase: Purchase) => {
+  const handleEdit = async (purchase: Purchase) => {
     setFormData({
       purchase_date: purchase.purchase_date,
       supplier_id: purchase.supplier_id.toString(),
@@ -225,6 +225,27 @@ export default function PurchasesPage() {
       unit_price: purchase.unit_price.toString(),
       advance_paid: purchase.advance_paid.toString(),
     })
+
+    // Fetch tank allocations for this purchase
+    try {
+      const allocationsResponse = await fetch(`/api/purchases/${purchase.id}/tank-allocations`)
+      if (allocationsResponse.ok) {
+        const { data } = await allocationsResponse.json()
+        // Use the fetched allocations, or default to one empty allocation if none exist
+        setTankAllocations(data.length > 0 ? data.map((alloc: any) => ({
+          tank_id: alloc.tank_id,
+          quantity: alloc.quantity.toString()
+        })) : [{ tank_id: 0, quantity: "" }])
+      } else {
+        // If there's an error fetching allocations, default to one empty allocation
+        setTankAllocations([{ tank_id: 0, quantity: "" }])
+      }
+    } catch (error) {
+      console.error("Error fetching tank allocations:", error)
+      // On error, default to one empty allocation
+      setTankAllocations([{ tank_id: 0, quantity: "" }])
+    }
+
     setEditingId(purchase.id)
     setIsOpen(true)
   }

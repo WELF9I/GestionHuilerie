@@ -41,12 +41,24 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Update tank volumes based on tank allocations
     if (tank_allocations && Array.isArray(tank_allocations)) {
-      // First clear existing allocations for this purchase by looking for previous movements
-      const previousAllocations = db.prepare(`
+      // First get the purchase to access batch number for finding previous movements
+      const currentPurchase = db.prepare('SELECT batch_number FROM olive_purchases WHERE id = ?').get(id) as any
+
+      // First clear existing allocations for this purchase by looking for both batch number and purchase ID formats
+      let previousAllocations = db.prepare(`
         SELECT tank_id, quantity_liters
         FROM tank_movements
         WHERE notes LIKE ?
-      `).all(`%purchase ID: ${id}%`) as any[]
+      `).all(`%Achat ${currentPurchase.batch_number}%`) as any[]
+
+      // If not found with batch number, try with purchase ID format
+      if (previousAllocations.length === 0) {
+        previousAllocations = db.prepare(`
+          SELECT tank_id, quantity_liters
+          FROM tank_movements
+          WHERE notes LIKE ?
+        `).all(`%purchase ID: ${id}%`) as any[]
+      }
 
       // Reduce the previous allocations
       for (const alloc of previousAllocations) {
@@ -104,11 +116,21 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     // Get tank allocations for this purchase to revert the volume changes
-    const previousAllocations = db.prepare(`
+    // First try to find with batch number format (for original purchases)
+    let previousAllocations = db.prepare(`
       SELECT tank_id, quantity_liters
       FROM tank_movements
       WHERE notes LIKE ?
-    `).all(`%purchase ID: ${id}%`) as any[]
+    `).all(`%Achat ${purchase.batch_number}%`) as any[]
+
+    // If not found with batch number, try with purchase ID format (for updated purchases)
+    if (previousAllocations.length === 0) {
+      previousAllocations = db.prepare(`
+        SELECT tank_id, quantity_liters
+        FROM tank_movements
+        WHERE notes LIKE ?
+      `).all(`%purchase ID: ${id}%`) as any[]
+    }
 
     // Reverse the tank volume changes
     for (const alloc of previousAllocations) {
