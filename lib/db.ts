@@ -182,6 +182,20 @@ export function initializeDatabase() {
       FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE CASCADE
     )
   `)
+
+  // Purchase payments table for tracking payments made to suppliers for specific purchases
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS purchase_payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      purchase_id INTEGER NOT NULL,
+      amount REAL NOT NULL,
+      payment_date DATE NOT NULL,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (purchase_id) REFERENCES olive_purchases(id) ON DELETE CASCADE
+    )
+  `)
 }
 
 function migratePressingTableIfRequired(database: any) {

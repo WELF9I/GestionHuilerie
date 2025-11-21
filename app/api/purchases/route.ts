@@ -67,7 +67,10 @@ export async function GET(request: NextRequest) {
 
     // Get paginated results
     let query = `
-      SELECT p.*, s.name as supplier_name
+      SELECT
+        p.*,
+        s.name as supplier_name,
+        (SELECT MAX(payment_date) FROM purchase_payments WHERE purchase_id = p.id) as last_payment_date
       FROM olive_purchases p
       LEFT JOIN suppliers s ON p.supplier_id = s.id
       ${whereClause}

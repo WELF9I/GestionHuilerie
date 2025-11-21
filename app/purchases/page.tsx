@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, Edit2, AlertCircle, ShoppingCart, CreditCard, DollarSign } from "lucide-react"
+import { Plus, Trash2, Edit2, AlertCircle, ShoppingCart, CreditCard, DollarSign, Coins, Wallet } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { formatDisplayDate } from "@/lib/date-utils"
 import {
@@ -48,10 +48,11 @@ interface Purchase {
   supplier_name: string
   quantity_kg: number
   unit_price: number
-  total_amount: number
-  advance_paid: number
-  remaining_balance: number
+  total_amount: number | string
+  advance_paid: number | string
+  remaining_balance: number | string
   batch_number: string
+  last_payment_date?: string
 }
 
 interface PaginationData {
@@ -101,6 +102,11 @@ export default function PurchasesPage() {
     totalRemaining: 0,
   })
   const [searchSupplierName, setSearchSupplierName] = useState("")
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false)
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null)
+  const [paymentAmount, setPaymentAmount] = useState("")
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0])
+  const [paymentNotes, setPaymentNotes] = useState("")
 
   useEffect(() => {
     const isAuth = localStorage.getItem("huilerie_auth") === "true"
@@ -268,6 +274,58 @@ export default function PurchasesPage() {
     if (page >= 1 && page <= pagination.totalPages) {
       loadData(page, searchSupplierName)
     }
+  }
+
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!selectedPurchase) {
+      alert("Aucun achat sélectionné")
+      return
+    }
+
+    const amount = Number(paymentAmount)
+    const maxAmount = Number(selectedPurchase.remaining_balance)
+
+    if (amount <= 0 || amount > maxAmount) {
+      alert(`Le montant doit être entre 0 et ${maxAmount.toFixed(2)} DT`)
+      return
+    }
+
+    try {
+      const response = await fetch("/api/purchase-payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          purchase_id: selectedPurchase.id,
+          amount: amount,
+          payment_date: paymentDate,
+          notes: paymentNotes || null
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setIsPaymentOpen(false)
+        // Reload the current page to update the remaining balance
+        await loadData(pagination.currentPage, searchSupplierName)
+        resetPaymentForm()
+        alert("Paiement enregistré avec succès")
+      } else {
+        const error = await response.json()
+        alert(error.error || "Erreur lors de l'enregistrement du paiement")
+      }
+    } catch (error) {
+      console.error("Erreur:", error)
+      alert("Erreur de connexion")
+    }
+  }
+
+  const resetPaymentForm = () => {
+    setPaymentAmount("")
+    setPaymentDate(new Date().toISOString().split("T")[0])
+    setPaymentNotes("")
+    setSelectedPurchase(null)
   }
 
   if (isLoading) {
@@ -528,6 +586,7 @@ export default function PurchasesPage() {
                         <TableHead>Total</TableHead>
                         <TableHead>Avance</TableHead>
                         <TableHead>Rest à payer</TableHead>
+                        <TableHead>Date Paiement</TableHead>
                         <TableHead>Lot</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
@@ -542,6 +601,9 @@ export default function PurchasesPage() {
                           <TableCell>{(Number(p.total_amount) || 0).toFixed(2)}</TableCell>
                           <TableCell>{(Number(p.advance_paid) || 0).toFixed(2)}</TableCell>
                           <TableCell>{(Number(p.remaining_balance) || 0).toFixed(2)}</TableCell>
+                          <TableCell>
+                            {p.last_payment_date ? formatDisplayDate(p.last_payment_date) : "-"}
+                          </TableCell>
                           <TableCell className="text-xs">{p.batch_number}</TableCell>
                           <TableCell>
                             <div className="flex gap-2">
@@ -560,6 +622,25 @@ export default function PurchasesPage() {
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
+                              {Number(p.remaining_balance) > 0 ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedPurchase(p);
+                                    setPaymentAmount(String(Number(p.remaining_balance) || 0));
+                                    setIsPaymentOpen(true);
+                                  }}
+                                >
+                                  <Wallet className="h-4 w-4 mr-1" />
+                                  Payer
+                                </Button>
+                              ) : (
+                                <Button variant="outline" size="sm" disabled>
+                                  <Wallet className="h-4 w-4 mr-1" />
+                                  Payé
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -663,6 +744,69 @@ export default function PurchasesPage() {
           </Card>
         </div>
       </main>
+
+      {/* Payment Modal */}
+      <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Donner Avance/Payer</DialogTitle>
+          </DialogHeader>
+          {selectedPurchase && (
+            <div className="space-y-4">
+              <div className="bg-muted p-4 rounded-lg">
+                <h3 className="font-medium mb-2">Détails de l'achat</h3>
+                <p><span className="font-medium">Fournisseur:</span> {selectedPurchase.supplier_name}</p>
+                <p><span className="font-medium">Date:</span> {formatDisplayDate(selectedPurchase.purchase_date)}</p>
+                <p><span className="font-medium">Dernier Paiement:</span> {selectedPurchase.last_payment_date ? formatDisplayDate(selectedPurchase.last_payment_date) : "-"}</p>
+                <p><span className="font-medium">Lot:</span> {selectedPurchase.batch_number}</p>
+                <p><span className="font-medium">Total:</span> {Number(selectedPurchase.total_amount).toFixed(2)} DT</p>
+                <p><span className="font-medium">Avance payée:</span> {Number(selectedPurchase.advance_paid).toFixed(2)} DT</p>
+                <p><span className="font-medium">Reste à payer:</span> {Number(selectedPurchase.remaining_balance).toFixed(2)} DT</p>
+              </div>
+
+              <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Montant à payer (TND) *</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    min="0"
+                    max={Number(selectedPurchase.remaining_balance)}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Maximum: {Number(selectedPurchase.remaining_balance).toFixed(2)} DT
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Date du paiement *</label>
+                  <Input
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Notes (facultatif)</label>
+                  <Input
+                    value={paymentNotes}
+                    onChange={(e) => setPaymentNotes(e.target.value)}
+                  />
+                </div>
+
+                <Button type="submit" className="w-full">
+                  Enregistrer le Paiement
+                </Button>
+              </form>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

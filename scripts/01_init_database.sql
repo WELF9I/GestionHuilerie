@@ -130,6 +130,18 @@ CREATE TABLE IF NOT EXISTS payroll (
   FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE CASCADE
 );
 
+-- 11. PURCHASE PAYMENTS TABLE
+CREATE TABLE IF NOT EXISTS purchase_payments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  purchase_id INTEGER NOT NULL,
+  amount REAL NOT NULL,
+  payment_date DATE NOT NULL,
+  notes TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (purchase_id) REFERENCES olive_purchases(id) ON DELETE CASCADE
+);
+
 -- Create indices for performance
 CREATE INDEX IF NOT EXISTS idx_employees_position ON employees(position);
 CREATE INDEX IF NOT EXISTS idx_olive_purchases_date ON olive_purchases(purchase_date);
@@ -141,3 +153,5 @@ CREATE INDEX IF NOT EXISTS idx_oil_sales_customer ON oil_sales(customer_name);
 CREATE INDEX IF NOT EXISTS idx_pomace_date ON pomace(collection_date);
 CREATE INDEX IF NOT EXISTS idx_payroll_date ON payroll(payment_date);
 CREATE INDEX IF NOT EXISTS idx_payroll_employee ON payroll(employee_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_payments_purchase ON purchase_payments(purchase_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_payments_date ON purchase_payments(payment_date);
